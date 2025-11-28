@@ -49,6 +49,7 @@ jobs:
     - name: Build APK
       run: |
         cd app/android
+        chmod +x gradlew
         ./gradlew assembleDebug
         
     - uses: actions/upload-artifact@v4
@@ -79,7 +80,7 @@ jobs:
     - name: Build iOS (Unsigned)
       run: |
         cd app/ios/App
-        xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS' build
+        xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
         
     # Note: This produces build artifacts but not a signed IPA. 
     # To get an IPA, we need signing identities.
