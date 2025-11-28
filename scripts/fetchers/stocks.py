@@ -31,7 +31,7 @@ def fetch_stock_data(tickers, period="1y"):
     
     # Batch fetch price data
     try:
-        prices = yf.download(tickers, period=period, group_by='ticker', auto_adjust=True, threads=True)
+        prices = yf.download(tickers, period=period, group_by='ticker', auto_adjust=True, threads=True, progress=False)
     except Exception as e:
         logging.error(f"Error fetching price data: {e}")
         return {}
@@ -44,14 +44,29 @@ def fetch_stock_data(tickers, period="1y"):
             # Get historical data for this ticker
             hist = prices[ticker] if len(tickers) > 1 else prices
             
+            # Skip if no historical data
+            if hist.empty:
+                logging.warning(f"No historical data for {ticker}")
+                continue
+            
+            # Current price
+            current_price = float(info.get("currentPrice") or hist['Close'].iloc[-1])
+            
             # Basic Fundamental Data
-            hist_data = [{"time": d.strftime('%Y-%m-%d'), "value": float(c)} for d, c in zip(hist.index[-90:], hist['Close'][-90:])] if not hist.empty else []
+            hist_data = [{"time": d.strftime('%Y-%m-%d'), "value": float(c)} 
+                        for d, c in zip(hist.index[-90:], hist['Close'][-90:])] if not hist.empty else []
+            
+            # Ideal Range (better formatting)
+            target_price = info.get('targetMeanPrice', 0)
+            is_indian = ticker.endswith('.NS')
+            ideal_range = f"{'₹' if is_indian else '$'}{target_price:.2f}" if target_price else "N/A"
             
             data[ticker] = {
-                "name": str(info.get("shortName", ticker)),
+                "symbol": ticker,
+                "name": str(info.get("shortName") or info.get("longName", ticker)),
                 "sector": str(info.get("sector", "Unknown")),
                 "industry": str(info.get("industry", "Unknown")),
-                "current_price": float(info.get("currentPrice", hist['Close'].iloc[-1] if not hist.empty else 0)),
+                "current_price": float(current_price),
                 "market_cap": int(info.get("marketCap", 0) or 0),
                 "pe_ratio": float(info.get("trailingPE", 0) or 0),
                 "forward_pe": float(info.get("forwardPE", 0) or 0),
@@ -59,17 +74,26 @@ def fetch_stock_data(tickers, period="1y"):
                 "price_to_book": float(info.get("priceToBook", 0) or 0),
                 "roce": float(info.get("returnOnEquity", 0) or 0),
                 "eps_growth": float(info.get("earningsGrowth", 0) or 0),
-                "debt_to_equity": float(info.get("debtToEquity", 0) or 0),
+                "debt_to_equity": float(info.get("debtToEquity", 0) or 0) / 100 if info.get("debtToEquity") else 0,
                 "free_cashflow": float(info.get("freeCashflow", 0) or 0),
                 "operating_margins": float(info.get("operatingMargins", 0) or 0),
-                "ideal_range": f"₹{info.get('targetMeanPrice', 0)}",
-                "history": hist_data
+                "ideal_range": ideal_range,
+                "history": hist_data,
+                "score": 0,  # Will be calculated by metrics.py
+                "recommendation": "Hold",  # Will be set by metrics.py
+                "reasons": []  # Will be populated by metrics.py
             }
+            
         except Exception as e:
             logging.error(f"Error processing {ticker}: {e}")
+            continue
             
+    logging.info(f"Successfully fetched data for {len(data)} stocks")
     return data
 
 if __name__ == "__main__":
-    data = fetch_stock_data(NIFTY_50_TICKERS[:5]) # Test with 5
+    data = fetch_stock_data(NIFTY_50_TICKERS[:5])  # Test with 5
     print(f"Fetched {len(data)} stocks.")
+    for ticker, stock_data in data.items():
+        print(f"{ticker}: {stock_data['name']} - ₹{stock_data['current_price']}")
+

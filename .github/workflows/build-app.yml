@@ -1,22 +1,63 @@
-name: Build App
+name: Build App & Daily Report
 
 on:
   push:
     branches: [ main ]
+  schedule:
+    # Run daily at 6 AM UTC (11:30 AM IST)
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:
-  build-web:
+  generate-data:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Python dependencies
+      working-directory: scripts
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Generate market data
+      working-directory: scripts
+      run: |
+        python main.py
+    
+    - name: Upload generated data
+      uses: actions/upload-artifact@v4
+      with:
+        name: market-data
+        path: app/public/latest_data.json
+
+  build-web:
+    needs: generate-data
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - uses: actions/download-artifact@v4
+      with:
+        name: market-data
+        path: app/public
+    
     - uses: actions/setup-node@v3
       with:
         node-version: 20
-    - run: npm install
+    
+    - name: Install dependencies
       working-directory: app
-    - run: npm run build
+      run: npm install
+    
+    - name: Build web app
       working-directory: app
+      run: npm run build
+    
     - uses: actions/upload-artifact@v4
       with:
         name: web-build
@@ -27,10 +68,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    
+    - uses: actions/download-artifact@v4
+      with:
+        name: market-data
+        path: app/public
+    
     - uses: actions/setup-java@v3
       with:
         distribution: 'zulu'
         java-version: '21'
+    
     - uses: actions/setup-node@v3
       with:
         node-version: 20
@@ -51,17 +99,27 @@ jobs:
         cd app/android
         chmod +x gradlew
         ./gradlew assembleDebug
+    
+    - name: Rename APK
+      run: |
+        mv app/android/app/build/outputs/apk/debug/app-debug.apk app/android/app/build/outputs/apk/debug/InvestIQ.apk
         
     - uses: actions/upload-artifact@v4
       with:
-        name: MarketPulse-APK
-        path: app/android/app/build/outputs/apk/debug/app-debug.apk
+        name: InvestIQ-Android-APK
+        path: app/android/app/build/outputs/apk/debug/InvestIQ.apk
 
   build-ios:
     needs: build-web
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
+    
+    - uses: actions/download-artifact@v4
+      with:
+        name: market-data
+        path: app/public
+    
     - uses: actions/setup-node@v3
       with:
         node-version: 20
@@ -84,4 +142,4 @@ jobs:
         
     # Note: This produces build artifacts but not a signed IPA. 
     # To get an IPA, we need signing identities.
-    # We will upload the derived data or build logs for now.
+

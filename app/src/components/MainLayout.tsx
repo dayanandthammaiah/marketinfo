@@ -14,20 +14,25 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const tabs = [
-        { id: 'india', label: 'India' },
-        { id: 'us', label: 'US Markets' },
-        { id: 'crypto', label: 'Crypto' },
-        { id: 'news', label: 'News' },
+        { id: 'india', label: 'India', gradient: 'from-orange-500 to-green-500' },
+        { id: 'us', label: 'US Markets', gradient: 'from-blue-500 to-red-500' },
+        { id: 'crypto', label: 'Crypto', gradient: 'from-purple-500 to-pink-500' },
+        { id: 'news', label: 'News', gradient: 'from-cyan-500 to-blue-500' },
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 flex flex-col transition-colors duration-300">
             {/* Top App Bar */}
-            <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b dark:border-gray-800">
+            <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 shadow-sm">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-                    {/* Logo */}
-                    <div className="flex items-center gap-2 font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        <span>InvestIQ</span>
+                    {/* Logo with Gradient */}
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
+                            <span className="text-white font-bold text-xl">II</span>
+                        </div>
+                        <span className="font-bold text-xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent hidden sm:block">
+                            InvestIQ
+                        </span>
                     </div>
 
                     {/* Search Bar (Hidden on mobile, shown on desktop) */}
@@ -37,27 +42,27 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
                             type="text"
                             placeholder="Search stocks, crypto, news..."
                             onChange={(e) => onSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
                         />
                     </div>
 
                     {/* Desktop Nav */}
-                    <nav className="hidden md:flex items-center gap-1">
+                    <nav className="hidden md:flex items-center gap-2">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={cn(
-                                    "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                                    "px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300",
                                     activeTab === tab.id
-                                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                        ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg shadow-${tab.id === 'india' ? 'orange' : tab.id === 'us' ? 'blue' : tab.id === 'crypto' ? 'purple' : 'cyan'}-500/30`
                                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                                 )}
                             >
                                 {tab.label}
                             </button>
                         ))}
-                        <div className="ml-2 pl-2 border-l dark:border-gray-700">
+                        <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-700">
                             <ThemeToggle />
                         </div>
                     </nav>
@@ -65,22 +70,25 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
                     {/* Mobile Actions */}
                     <div className="flex md:hidden items-center gap-2">
                         <ThemeToggle />
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2">
-                            {isMenuOpen ? <X /> : <Menu />}
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        >
+                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
                 </div>
 
                 {/* Mobile Search & Nav (Collapsible) */}
                 {isMenuOpen && (
-                    <div className="md:hidden border-t dark:border-gray-800 p-4 space-y-4 bg-white dark:bg-gray-900 animate-in slide-in-from-top-2">
+                    <div className="md:hidden border-t border-gray-200 dark:border-gray-800 p-4 space-y-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg animate-in slide-in-from-top-4">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
                                 placeholder="Search..."
                                 onChange={(e) => onSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
                         <div className="flex flex-col gap-2">
@@ -92,10 +100,10 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
                                         setIsMenuOpen(false);
                                     }}
                                     className={cn(
-                                        "px-4 py-3 rounded-lg text-left font-medium transition-colors",
+                                        "px-4 py-3 rounded-xl text-left font-semibold transition-all",
                                         activeTab === tab.id
-                                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                                            : "text-gray-600 dark:text-gray-400"
+                                            ? `bg-gradient-to-r ${tab.gradient} text-white shadow-md`
+                                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                                     )}
                                 >
                                     {tab.label}
@@ -110,6 +118,11 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
             <main className="flex-1 container mx-auto px-4 py-6">
                 {children}
             </main>
+
+            {/* Footer */}
+            <footer className="border-t border-gray-200 dark:border-gray-800 py-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                <p>© 2025 InvestIQ • Powered by open-source APIs</p>
+            </footer>
         </div>
     );
 }
