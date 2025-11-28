@@ -6,63 +6,90 @@ import { StockDetail } from './components/StockDetail';
 import type { StockData } from './types/index';
 import { cn } from './lib/utils';
 
+// --- Color Configuration ---
+const COLORS = {
+  STRONG_BUY: "text-green-600 dark:text-green-400 font-bold", // Bright Green
+  BUY: "text-green-500 dark:text-green-500 font-medium", // Light Green
+  HOLD: "text-yellow-600 dark:text-yellow-400 font-medium", // Amber
+  WAIT: "text-blue-500 dark:text-blue-400 font-medium", // Blue
+  AVOID: "text-red-600 dark:text-red-400 font-bold", // Red
+};
+
+const getRecColor = (rec: string) => {
+  switch (rec?.toLowerCase()) {
+    case 'strong buy': return COLORS.STRONG_BUY;
+    case 'buy': return COLORS.BUY;
+    case 'hold': return COLORS.HOLD;
+    case 'wait': return COLORS.WAIT;
+    case 'avoid':
+    case 'sell': return COLORS.AVOID;
+    default: return "text-gray-500";
+  }
+};
+
 // --- Columns Configuration ---
 const stockColumns: Column<StockData>[] = [
-  { header: 'Name', accessorKey: 'name', className: 'font-medium text-blue-600 dark:text-blue-400' },
-  { header: 'Price', accessorKey: 'current_price', cell: (s) => `₹${s.current_price?.toFixed(2)}` },
-  { header: 'Score', accessorKey: 'score', cell: (s) => <span className="font-bold">{s.score}</span> },
-  { header: 'ROCE', accessorKey: 'roce', cell: (s) => <span className={cn((s.roce || 0) > 0.15 ? "text-green-600" : "text-gray-600")}>{((s.roce || 0) * 100).toFixed(1)}%</span> },
-  { header: 'EPS Growth', accessorKey: 'eps_growth', cell: (s) => <span className={cn((s.eps_growth || 0) > 0.15 ? "text-green-600" : "text-gray-600")}>{((s.eps_growth || 0) * 100).toFixed(1)}%</span> },
-  {
-    header: 'Rec', accessorKey: 'recommendation', cell: (s) => (
-      <span className={cn(
-        "px-2 py-1 rounded-full text-xs font-bold",
-        s.recommendation === 'Strong Buy' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-          s.recommendation === 'Buy' ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-500" :
-            s.recommendation === 'Hold' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" :
-              "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-      )}>{s.recommendation}</span>
-    )
-  },
+  { header: 'Name', accessorKey: 'name', className: 'font-bold text-gray-900 dark:text-gray-100' },
+  { header: 'Price', accessorKey: 'current_price', cell: (s) => `₹${s.current_price?.toLocaleString()}`, mobileLabel: 'Price' },
+  { header: 'Score', accessorKey: 'score', cell: (s) => <span className="font-bold">{s.score}</span>, mobileLabel: 'Score' },
+  { header: 'Ideal Range', accessorKey: 'ideal_range', cell: (s) => <span className="text-gray-500 text-xs">{s.ideal_range || '-'}</span>, mobileLabel: 'Target' },
+  { header: 'ROCE', accessorKey: 'roce', cell: (s) => <span className={cn((s.roce || 0) > 0.15 ? COLORS.BUY : "")}>{((s.roce || 0) * 100).toFixed(1)}%</span>, mobileLabel: 'ROCE' },
+  { header: 'Rec', accessorKey: 'recommendation', cell: (s) => <span className={getRecColor(s.recommendation)}>{s.recommendation}</span>, mobileLabel: 'Rec' },
 ];
 
 const cryptoColumns: Column<StockData>[] = [
-  { header: 'Pair', accessorKey: 'name', className: 'font-medium text-blue-600 dark:text-blue-400' },
-  { header: 'Price', accessorKey: 'current_price', cell: (s) => `$${s.current_price?.toLocaleString()}` },
+  { header: 'Pair', accessorKey: 'name', className: 'font-bold text-gray-900 dark:text-gray-100' },
+  { header: 'Price', accessorKey: 'current_price', cell: (s) => `$${s.current_price?.toLocaleString()}`, mobileLabel: 'Price' },
   {
     header: '24h %', accessorKey: 'price_change_24h', cell: (s) => (
-      <span className={cn((s.price_change_24h || 0) > 0 ? "text-green-600" : "text-red-600")}>
+      <span className={cn((s.price_change_24h || 0) > 0 ? COLORS.BUY : COLORS.AVOID)}>
         {(s.price_change_24h || 0).toFixed(2)}%
       </span>
-    )
+    ), mobileLabel: '24h %'
   },
-  { header: 'Score', accessorKey: 'score', cell: (s) => <span className="font-bold">{s.score}</span> },
-  { header: 'RSI', accessorKey: 'rsi', cell: (s) => <span className={cn(s.rsi && s.rsi < 30 ? "text-green-600" : s.rsi && s.rsi > 70 ? "text-red-600" : "")}>{s.rsi?.toFixed(1)}</span> },
+  { header: 'Score', accessorKey: 'score', cell: (s) => <span className="font-bold">{s.score}</span>, mobileLabel: 'Score' },
   {
-    header: 'Rec', accessorKey: 'recommendation', cell: (s) => (
+    header: 'RSI', accessorKey: 'rsi', cell: (s) => (
       <span className={cn(
-        "px-2 py-1 rounded-full text-xs font-bold",
-        s.recommendation === 'Strong Buy' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-          "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
-      )}>{s.recommendation}</span>
-    )
+        s.rsi && s.rsi < 30 ? COLORS.STRONG_BUY :
+          s.rsi && s.rsi > 70 ? COLORS.AVOID :
+            COLORS.HOLD
+      )}>{s.rsi?.toFixed(1)}</span>
+    ), mobileLabel: 'RSI'
   },
+  { header: 'Rec', accessorKey: 'recommendation', cell: (s) => <span className={getRecColor(s.recommendation)}>{s.recommendation}</span>, mobileLabel: 'Rec' },
 ];
 
 // --- Components ---
 const NewsFeed = ({ news }: { news: any[] }) => (
   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
     {news?.map((item, i) => (
-      <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border dark:border-gray-700">
+      <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border dark:border-gray-700 group">
+        {item.image && (
+          <div className="mb-3 h-40 overflow-hidden rounded-lg">
+            <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          </div>
+        )}
         <div className="flex justify-between items-start mb-2">
           <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{item.category}</span>
           <span className="text-xs text-gray-400">{new Date(item.published).toLocaleDateString()}</span>
         </div>
-        <h3 className="font-bold text-lg mb-2 line-clamp-2">{item.title}</h3>
+        <h3 className="font-bold text-lg mb-2 line-clamp-2 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.title}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3">{item.summary}</p>
         <div className="mt-4 text-xs font-medium text-gray-400">{item.source}</div>
       </a>
     ))}
+  </div>
+);
+
+const Legend = () => (
+  <div className="flex flex-wrap gap-4 text-xs mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-sm">
+    <span className="font-bold text-gray-500">Legend:</span>
+    <span className={COLORS.STRONG_BUY}>● Strong Buy</span>
+    <span className={COLORS.BUY}>● Buy</span>
+    <span className={COLORS.HOLD}>● Hold</span>
+    <span className={COLORS.WAIT}>● Wait</span>
+    <span className={COLORS.AVOID}>● Avoid/Sell</span>
   </div>
 );
 
@@ -88,7 +115,6 @@ function App() {
 
   const renderContent = () => {
     if (search) {
-      // Global Search Results View
       return (
         <div className="space-y-8">
           {filteredData?.nifty?.length ? (
@@ -114,9 +140,24 @@ function App() {
     }
 
     switch (activeTab) {
-      case 'india': return <ResponsiveTable data={data?.nifty_50 || []} columns={stockColumns} onRowClick={setSelectedStock} />;
-      case 'us': return <ResponsiveTable data={data?.us_stocks || []} columns={stockColumns} onRowClick={setSelectedStock} />;
-      case 'crypto': return <ResponsiveTable data={data?.crypto || []} columns={cryptoColumns} onRowClick={setSelectedStock} />;
+      case 'india': return (
+        <>
+          <Legend />
+          <ResponsiveTable data={data?.nifty_50 || []} columns={stockColumns} onRowClick={setSelectedStock} />
+        </>
+      );
+      case 'us': return (
+        <>
+          <Legend />
+          <ResponsiveTable data={data?.us_stocks || []} columns={stockColumns} onRowClick={setSelectedStock} />
+        </>
+      );
+      case 'crypto': return (
+        <>
+          <Legend />
+          <ResponsiveTable data={data?.crypto || []} columns={cryptoColumns} onRowClick={setSelectedStock} />
+        </>
+      );
       case 'news': return <NewsFeed news={data?.news || []} />;
       default: return null;
     }

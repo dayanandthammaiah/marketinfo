@@ -10,6 +10,7 @@ export interface StockData {
   reasons: string[];
   price_change_24h?: number; // For crypto
   rsi?: number;
+  ideal_range?: string;
   history?: { time: string; value: number }[];
 }
 

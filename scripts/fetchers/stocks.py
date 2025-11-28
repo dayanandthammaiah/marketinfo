@@ -45,6 +45,8 @@ def fetch_stock_data(tickers, period="1y"):
             hist = prices[ticker] if len(tickers) > 1 else prices
             
             # Basic Fundamental Data
+            hist_data = [{"time": d.strftime('%Y-%m-%d'), "value": float(c)} for d, c in zip(hist.index[-90:], hist['Close'][-90:])] if not hist.empty else []
+            
             data[ticker] = {
                 "name": str(info.get("shortName", ticker)),
                 "sector": str(info.get("sector", "Unknown")),
@@ -60,7 +62,8 @@ def fetch_stock_data(tickers, period="1y"):
                 "debt_to_equity": float(info.get("debtToEquity", 0) or 0),
                 "free_cashflow": float(info.get("freeCashflow", 0) or 0),
                 "operating_margins": float(info.get("operatingMargins", 0) or 0),
-                "history": [{"time": d.strftime('%Y-%m-%d'), "value": float(c)} for d, c in zip(hist.index[-90:], hist['Close'][-90:])] if not hist.empty else []
+                "ideal_range": f"₹{info.get('targetMeanPrice', 0)}",
+                "history": hist_data
             }
         except Exception as e:
             logging.error(f"Error processing {ticker}: {e}")

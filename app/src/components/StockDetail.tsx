@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createChart, ColorType, LineSeries } from 'lightweight-charts';
-import { X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { StockData } from '../types/index';
 import { cn } from '../lib/utils';
 
@@ -51,58 +51,79 @@ export function StockDetail({ stock, onClose }: StockDetailProps) {
     }, [stock]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-                    <div>
-                        <h2 className="text-xl font-bold">{stock.name}</h2>
-                        <p className="text-sm text-gray-500">{stock.sector}</p>
+        <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-gray-900 animate-in slide-in-from-bottom-4">
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-800 p-4 border-b dark:border-gray-700 flex items-center gap-4 shadow-sm sticky top-0 z-10">
+                <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                    <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
+                </button>
+                <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{stock.name}</h2>
+                    <p className="text-sm text-gray-500">{stock.sector}</p>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Current Price</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {stock.symbol?.includes('USDT') || stock.symbol?.includes('USD') ? '$' : '₹'}
+                            {stock.current_price?.toLocaleString()}
+                        </p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                        <X size={20} />
-                    </button>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Score</p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stock.score}/100</p>
+                    </div>
+
+                    {stock.roce !== undefined && (
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">ROCE</p>
+                            <p className={cn("text-xl font-bold", stock.roce > 0.15 ? "text-green-500" : "text-gray-900 dark:text-gray-100")}>
+                                {(stock.roce * 100).toFixed(1)}%
+                            </p>
+                        </div>
+                    )}
+
+                    {stock.rsi !== undefined && (
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">RSI (14)</p>
+                            <p className={cn("text-xl font-bold", stock.rsi < 30 ? "text-green-500" : stock.rsi > 70 ? "text-red-500" : "text-yellow-500")}>
+                                {stock.rsi.toFixed(1)}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
-                <div className="p-4 space-y-6">
-                    {/* Key Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
-                            <p className="text-lg font-bold">₹{stock.current_price?.toFixed(2)}</p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Score</p>
-                            <p className="text-lg font-bold">{stock.score}/100</p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">ROCE</p>
-                            <p className={cn("text-lg font-bold", (stock.roce || 0) > 0.15 ? "text-green-500" : "text-gray-900 dark:text-gray-100")}>
-                                {((stock.roce || 0) * 100).toFixed(1)}%
-                            </p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">EPS Growth</p>
-                            <p className={cn("text-lg font-bold", (stock.eps_growth || 0) > 0.15 ? "text-green-500" : "text-gray-900 dark:text-gray-100")}>
-                                {((stock.eps_growth || 0) * 100).toFixed(1)}%
-                            </p>
-                        </div>
-                    </div>
+                {/* Chart */}
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                    <h3 className="font-bold mb-4 text-gray-900 dark:text-white">Price History (90 Days)</h3>
+                    <div ref={chartContainerRef} className="w-full h-[300px]" />
+                </div>
 
-                    {/* Chart */}
-                    <div>
-                        <h3 className="font-bold mb-2">Price History (90 Days)</h3>
-                        <div ref={chartContainerRef} className="w-full h-[300px] border dark:border-gray-700 rounded-lg" />
-                    </div>
-
-                    {/* Recommendation */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
-                        <h3 className="font-bold text-blue-800 dark:text-blue-300 mb-1">Recommendation: {stock.recommendation}</h3>
-                        <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-400">
-                            {stock.reasons?.map((reason, i) => (
-                                <li key={i}>{reason}</li>
-                            ))}
-                        </ul>
-                    </div>
+                {/* Recommendation */}
+                <div className={cn(
+                    "p-6 rounded-xl border shadow-sm",
+                    stock.recommendation === 'Strong Buy' ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800" :
+                        stock.recommendation === 'Buy' ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800" :
+                            stock.recommendation === 'Hold' ? "bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800" :
+                                "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+                )}>
+                    <h3 className={cn(
+                        "text-lg font-bold mb-2",
+                        stock.recommendation === 'Strong Buy' || stock.recommendation === 'Buy' ? "text-green-800 dark:text-green-300" :
+                            stock.recommendation === 'Hold' ? "text-yellow-800 dark:text-yellow-300" :
+                                "text-red-800 dark:text-red-300"
+                    )}>
+                        Recommendation: {stock.recommendation}
+                    </h3>
+                    <ul className="list-disc list-inside text-sm space-y-1 opacity-80">
+                        {stock.reasons?.map((reason, i) => (
+                            <li key={i}>{reason}</li>
+                        ))}
+                    </ul>
                 </div>
             </div>
         </div>
