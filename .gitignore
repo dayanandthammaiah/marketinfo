@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+build/
+
+# Capacitor
+app/android/app/build/
+app/ios/App/App/public/
+app/ios/App/Podfile.lock
+app/ios/App/Pods/
+
+# OS
+.DS_Store
+Thumbs.db

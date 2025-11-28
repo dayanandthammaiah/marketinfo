@@ -1,0 +1,86 @@
+name: Build App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - run: npm install
+      working-directory: app
+    - run: npm run build
+      working-directory: app
+    - uses: actions/upload-artifact@v4
+      with:
+        name: web-build
+        path: app/dist
+
+  build-android:
+    needs: build-web
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: Install Dependencies
+      run: |
+        cd app
+        npm install
+        
+    - name: Build Web & Sync
+      run: |
+        cd app
+        npm run build
+        npx cap sync android
+        
+    - name: Build APK
+      run: |
+        cd app/android
+        ./gradlew assembleDebug
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: app/android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-ios:
+    needs: build-web
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: Install Dependencies
+      run: |
+        cd app
+        npm install
+        
+    - name: Build Web & Sync
+      run: |
+        cd app
+        npm run build
+        npx cap sync ios
+    
+    - name: Build iOS (Unsigned)
+      run: |
+        cd app/ios/App
+        xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS' build
+        
+    # Note: This produces build artifacts but not a signed IPA. 
+    # To get an IPA, we need signing identities.
+    # We will upload the derived data or build logs for now.

@@ -1,0 +1,7 @@
+yfinance
+pandas
+numpy
+jinja2
+requests
+pycoingecko
+scipy
