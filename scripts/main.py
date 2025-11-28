@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from fetchers.stocks import fetch_stock_data, NIFTY_50_TICKERS, US_TICKERS
 from fetchers.crypto import fetch_crypto_data
+from fetchers.news import fetch_news
 from analysis.metrics import score_stock
 # from analysis.report import generate_html_report, send_email # To be implemented
 
@@ -18,6 +19,7 @@ def main():
     nifty_data = fetch_stock_data(NIFTY_50_TICKERS)
     us_data = fetch_stock_data(US_TICKERS)
     crypto_data = fetch_crypto_data()
+    news_data = fetch_news()
     
     # 2. Analyze & Score
     analyzed_nifty = []
@@ -36,7 +38,8 @@ def main():
         "last_updated": datetime.now().isoformat(),
         "nifty_50": analyzed_nifty,
         "us_stocks": list(us_data.values()),
-        "crypto": crypto_data
+        "crypto": crypto_data,
+        "news": news_data
     }
     
     # Save JSON
