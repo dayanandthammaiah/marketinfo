@@ -1,48 +1,40 @@
 import { ResponsiveTable, type Column } from './ResponsiveTable';
 import type { StockData } from '../types';
-
+import {
+    getPriceChangeColor,
+    getRecommendationColor,
+    getScoreColor,
+    getMetricColor
+} from '../utils/metricColors';
+import { formatIdealRange } from '../utils/idealRanges';
 
 interface InstitutionalStockTableProps {
     data: StockData[];
     onRowClick?: (stock: StockData) => void;
 }
 
-// Helper function to get color class based on value and thresholds
-function getColorClass(value: number, goodThreshold: number, okThreshold: number, isReversed: boolean = false): string {
-    if (isReversed) {
-        // For metrics where lower is better (like Debt/EBITDA)
-        if (value <= goodThreshold) return 'text-green-600 dark:text-green-400 font-semibold';
-        if (value <= okThreshold) return 'text-amber-600 dark:text-amber-400 font-semibold';
-        return 'text-red-600 dark:text-red-400 font-semibold';
-    } else {
-        // For metrics where higher is better (like ROCE, EPS Growth)
-        if (value >= goodThreshold) return 'text-green-600 dark:text-green-400 font-semibold';
-        if (value >= okThreshold) return 'text-amber-600 dark:text-amber-400 font-semibold';
-        return 'text-red-600 dark:text-red-400 font-semibold';
-    }
-}
+// Helper component for metric with ideal value
+function MetricWithIdeal({ value, displayValue, metricKey, type = 'positive' }: {
+    value: number;
+    displayValue: string;
+    metricKey: string;
+    type?: 'positive' | 'negative';
+}) {
+    const colors = getMetricColor(value, type);
+    const idealRange = formatIdealRange(metricKey, 'stock');
 
-// Get emoji indicator based on value
-function getEmoji(value: number, goodThreshold: number, okThreshold: number, isReversed: boolean = false): string {
-    if (isReversed) {
-        if (value <= goodThreshold) return '🟢';
-        if (value <= okThreshold) return '🟡';
-        return '🔴';
-    } else {
-        if (value >= goodThreshold) return '🟢';
-        if (value >= okThreshold) return '🟡';
-        return '🔴';
-    }
-}
-
-// Format recommendation with color
-function getRecommendationColor(rec: string): string {
-    const recLower = rec.toLowerCase();
-    if (recLower.includes('strong buy')) return 'text-green-700 dark:text-green-300 font-bold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded';
-    if (recLower.includes('buy')) return 'text-green-600 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded';
-    if (recLower.includes('hold')) return 'text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded';
-    if (recLower.includes('wait')) return 'text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded';
-    return 'text-red-600 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded';
+    return (
+        <div className="flex flex-col gap-0.5">
+            <span className={`${colors.text} font-semibold font-mono`}>
+                {displayValue}
+            </span>
+            {idealRange && (
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">
+                    {idealRange}
+                </span>
+            )}
+        </div>
+    );
 }
 
 export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStockTableProps) {
@@ -53,8 +45,12 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             mobileLabel: 'Stock',
             cell: (stock) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-gray-900 dark:text-gray-100">{stock.name}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{stock.symbol}</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">
+                        {stock.name}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {stock.symbol}
+                    </span>
                 </div>
             ),
         },
@@ -62,11 +58,22 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             header: 'Price',
             accessorKey: 'current_price',
             mobileLabel: 'Price',
-            className: 'font-mono',
+            className: 'font-mono font-semibold',
             cell: (stock) => {
-                const isIndian = stock.symbol.endsWith('.NS') || !stock.symbol.includes('.'); // Default to Indian for simulated
+                const isIndian = stock.symbol.endsWith('.NS') || !stock.symbol.includes('.');
                 const prefix = isIndian ? '₹' : '$';
-                return <span>{prefix}{stock.current_price.toFixed(2)}</span>;
+                return (
+                    <div className="flex flex-col">
+                        <span className="text-gray-900 dark:text-gray-100">
+                            {prefix}{stock.current_price.toFixed(2)}
+                        </span>
+                        {stock.ideal_range && (
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                Range: {stock.ideal_range}
+                            </span>
+                        )}
+                    </div>
+                );
             },
         },
         {
@@ -76,8 +83,12 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             className: 'font-mono',
             cell: (stock) => {
                 const change = stock.change || 0;
-                const colorClass = change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-                return <span className={colorClass}>{change > 0 ? '+' : ''}{change.toFixed(2)}</span>;
+                const colors = getPriceChangeColor(change);
+                return (
+                    <span className={`${colors.text} font-semibold`}>
+                        {change > 0 ? '+' : ''}{change.toFixed(2)}
+                    </span>
+                );
             },
         },
         {
@@ -87,89 +98,129 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             className: 'font-mono',
             cell: (stock) => {
                 const changePercent = stock.changePercent || 0;
-                const colorClass = changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-                return <span className={colorClass}>{changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%</span>;
+                const colors = getPriceChangeColor(changePercent);
+                return (
+                    <div className="flex items-center gap-1">
+                        <span className={`${colors.badge} px-2 py-0.5 rounded-full text-xs font-bold`}>
+                            {changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%
+                        </span>
+                    </div>
+                );
             },
         },
         {
             header: 'ROCE',
             accessorKey: 'roce',
             mobileLabel: 'ROCE',
-            className: 'font-mono',
             cell: (stock) => {
-                const roce = stock.roce || 0; // ROCE is usually already in percentage in data
-                const emoji = getEmoji(roce, 15, 10, false);
-                const colorClass = getColorClass(roce, 15, 10, false);
-                return <span className={colorClass}>{emoji} {roce.toFixed(1)}%</span>;
+                const roce = stock.roce || 0;
+                return (
+                    <MetricWithIdeal
+                        value={roce}
+                        displayValue={`${roce.toFixed(1)}%`}
+                        metricKey="roce"
+                        type="positive"
+                    />
+                );
             },
         },
         {
             header: 'EPS Growth',
             accessorKey: 'eps_growth',
-            mobileLabel: 'EPS Growth',
-            className: 'font-mono',
+            mobileLabel: 'EPS',
             cell: (stock) => {
                 const epsGrowth = stock.eps_growth || 0;
-                const emoji = getEmoji(epsGrowth, 15, 10, false);
-                const colorClass = getColorClass(epsGrowth, 15, 10, false);
-                return <span className={colorClass}>{emoji} {epsGrowth.toFixed(1)}%</span>;
+                return (
+                    <MetricWithIdeal
+                        value={epsGrowth}
+                        displayValue={`${epsGrowth.toFixed(1)}%`}
+                        metricKey="eps_growth"
+                        type="positive"
+                    />
+                );
             },
         },
         {
             header: 'FCF Yield',
             accessorKey: 'fcf_yield',
-            mobileLabel: 'FCF Yield',
-            className: 'font-mono',
+            mobileLabel: 'FCF',
             cell: (stock) => {
                 const fcfYield = stock.fcf_yield || 0;
-                const emoji = getEmoji(fcfYield, 3, 1, false);
-                const colorClass = getColorClass(fcfYield, 3, 1, false);
-                return <span className={colorClass}>{emoji} {fcfYield.toFixed(1)}%</span>;
+                return (
+                    <MetricWithIdeal
+                        value={fcfYield}
+                        displayValue={`${fcfYield.toFixed(1)}%`}
+                        metricKey="fcf_yield"
+                        type="positive"
+                    />
+                );
             },
         },
         {
             header: 'Debt/EBITDA',
             accessorKey: 'debt_to_ebitda',
-            mobileLabel: 'Debt/EBITDA',
-            className: 'font-mono',
+            mobileLabel: 'Debt',
             cell: (stock) => {
                 const debtEbitda = stock.debt_to_ebitda || 0;
-                const emoji = getEmoji(debtEbitda, 2, 4, true); // Reversed - lower is better
-                const colorClass = getColorClass(debtEbitda, 2, 4, true);
-                return <span className={colorClass}>{emoji} {debtEbitda.toFixed(1)}x</span>;
+                return (
+                    <MetricWithIdeal
+                        value={debtEbitda}
+                        displayValue={`${debtEbitda.toFixed(1)}x`}
+                        metricKey="debt_to_ebitda"
+                        type="negative"
+                    />
+                );
             },
         },
         {
             header: '6M Return',
             accessorKey: 'price_6m_return',
-            mobileLabel: '6M Return',
-            className: 'font-mono',
+            mobileLabel: '6M',
             cell: (stock) => {
                 const return6m = stock.price_6m_return || 0;
-                const emoji = getEmoji(return6m, 8, 0, false);
-                const colorClass = getColorClass(return6m, 8, 0, false);
-                return <span className={colorClass}>{emoji} {return6m > 0 ? '+' : ''}{return6m.toFixed(1)}%</span>;
+                return (
+                    <MetricWithIdeal
+                        value={return6m}
+                        displayValue={`${return6m > 0 ? '+' : ''}${return6m.toFixed(1)}%`}
+                        metricKey="price_6m_return"
+                        type="positive"
+                    />
+                );
             },
         },
         {
             header: 'P/E Ratio',
             accessorKey: 'pe_ratio',
             mobileLabel: 'P/E',
-            className: 'font-mono',
             cell: (stock) => {
                 const pe = stock.pe_ratio || 0;
-                return <span>{pe > 0 ? pe.toFixed(1) : 'N/A'}</span>;
+                return (
+                    <MetricWithIdeal
+                        value={pe}
+                        displayValue={pe > 0 ? pe.toFixed(1) : 'N/A'}
+                        metricKey="pe_ratio"
+                        type="negative"
+                    />
+                );
             },
         },
         {
             header: 'Score',
             accessorKey: 'score',
             mobileLabel: 'Score',
-            className: 'font-mono',
             cell: (stock) => {
                 const score = stock.score || 0;
-                const colorClass = getColorClass(score, 70, 50, false);
-                return <span className={colorClass}>{score.toFixed(0)}</span>;
+                const colors = getScoreColor(score);
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        <span className={`${colors.badge} px-3 py-1 rounded-full text-sm font-bold inline-block`}>
+                            {score.toFixed(0)}
+                        </span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            Target: 85
+                        </span>
+                    </div>
+                );
             },
         },
         {
@@ -177,18 +228,43 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             accessorKey: 'recommendation',
             mobileLabel: 'Rec.',
             cell: (stock) => {
-                return <span className={getRecommendationColor(stock.recommendation || 'Hold')}>{stock.recommendation || 'Hold'}</span>;
+                const colors = getRecommendationColor(stock.recommendation || 'HOLD');
+                return (
+                    <span className={`${colors.badge} px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide`}>
+                        {stock.recommendation || 'HOLD'}
+                    </span>
+                );
             },
         },
     ];
 
     return (
         <div className="w-full">
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-t-lg px-4 py-3 mb-0">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-2">Institutional Analysis</h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Color-coded metrics: <span className="font-semibold">🟢 Excellent</span> <span className="ml-2">🟡 Good</span> <span className="ml-2">🔴 Needs Attention</span>
-                </p>
+            <div className="glass rounded-t-xl px-4 py-3 mb-0 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h3 className="gradient-text text-lg font-bold mb-1">
+                            Institutional Analysis
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                            All metrics color-coded with ideal target values displayed
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-green-500"></div>
+                            <span className="text-gray-600 dark:text-gray-400">Excellent</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400"></div>
+                            <span className="text-gray-600 dark:text-gray-400">Fair</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-500"></div>
+                            <span className="text-gray-600 dark:text-gray-400">Poor</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             <ResponsiveTable data={data} columns={columns} onRowClick={onRowClick} />
         </div>

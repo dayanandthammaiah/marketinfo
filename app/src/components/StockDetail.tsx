@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, LineSeries } from 'lightweight-charts';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Bell } from 'lucide-react';
 import type { StockData } from '../types/index';
 import { cn } from '../lib/utils';
+import { TradingViewWidget } from './TradingViewWidget';
+import { AddAlertDialog } from './AddAlertDialog';
+import { FavoriteButton } from './FavoriteButton';
 
 interface StockDetailProps {
     stock: StockData;
@@ -11,6 +14,7 @@ interface StockDetailProps {
 
 export function StockDetail({ stock, onClose }: StockDetailProps) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
+    const [showAlertDialog, setShowAlertDialog] = useState(false);
 
     useEffect(() => {
         if (!chartContainerRef.current || !stock.history || stock.history.length === 0) return;
@@ -53,15 +57,37 @@ export function StockDetail({ stock, onClose }: StockDetailProps) {
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-gray-900 animate-in slide-in-from-bottom-4">
             {/* Header */}
-            <div className="bg-white dark:bg-gray-800 p-4 border-b dark:border-gray-700 flex items-center gap-4 shadow-sm sticky top-0 z-10">
-                <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
-                </button>
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{stock.name}</h2>
-                    <p className="text-sm text-gray-500">{stock.sector}</p>
+            <div className="bg-white dark:bg-gray-800 p-4 border-b dark:border-gray-700 flex items-center justify-between gap-4 shadow-sm sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                        <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
+                    </button>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{stock.name}</h2>
+                        <p className="text-sm text-gray-500">{stock.sector}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <FavoriteButton id={stock.symbol} type="stock" />
+                    <button
+                        onClick={() => setShowAlertDialog(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-secondary-500 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 active:scale-95 transition-all"
+                    >
+                        <Bell size={18} />
+                        <span className="hidden sm:inline">Set Alert</span>
+                    </button>
                 </div>
             </div>
+
+            {showAlertDialog && (
+                <AddAlertDialog
+                    symbol={stock.symbol}
+                    name={stock.name}
+                    type="stock"
+                    currentPrice={stock.current_price}
+                    onClose={() => setShowAlertDialog(false)}
+                />
+            )}
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {/* Key Metrics Grid */}
@@ -111,6 +137,20 @@ export function StockDetail({ stock, onClose }: StockDetailProps) {
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
                     <h3 className="font-bold mb-4 text-gray-900 dark:text-white">Price History (90 Days)</h3>
                     <div ref={chartContainerRef} className="w-full h-[300px]" />
+                </div>
+
+                {/* TradingView Advanced Chart */}
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                    <h3 className="font-bold mb-4 text-gray-900 dark:text-white">
+                        Advanced Technical Analysis
+                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-2">Powered by TradingView</span>
+                    </h3>
+                    <TradingViewWidget
+                        symbol={stock.symbol}
+                        type="stock"
+                        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                        height={500}
+                    />
                 </div>
 
                 {/* Recommendation */}

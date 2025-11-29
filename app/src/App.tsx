@@ -1,15 +1,27 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useData } from './hooks/useData';
 import { MainLayout } from './components/MainLayout';
 import { InstitutionalStockTable } from './components/InstitutionalStockTable';
 import { CryptoInstitutionalTable } from './components/CryptoInstitutionalTable';
 import { StockDetail } from './components/StockDetail';
+import { NewsCard } from './components/NewsCard';
+import { FloatingActionButton } from './components/FloatingActionButton';
+import { FavoritesTab } from './components/FavoritesTab';
+import { AlertsList } from './components/AlertsList';
+import { PortfolioTab } from './components/PortfolioTab';
+import { NewsFilters } from './components/NewsFilters';
+import { useAlerts } from './contexts/AlertsContext';
+import { usePortfolio } from './contexts/PortfolioContext';
 import type { StockData } from './types/index';
 
 function App() {
   const { data, loading, error, lastUpdated, refresh, isRefreshing } = useData();
-  const [activeTab, setActiveTab] = useState<'india' | 'us' | 'crypto' | 'news'>('india');
+  const { checkAlerts } = useAlerts();
+  const { updatePrices } = usePortfolio();
+  const [activeTab, setActiveTab] = useState<'india' | 'us' | 'crypto' | 'news' | 'favorites' | 'alerts' | 'portfolio'>('india');
   const [search, setSearch] = useState('');
+  const [newsCategory, setNewsCategory] = useState('All');
+  const [newsSearch, setNewsSearch] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockData | null>(null);
 
   const filteredData = useMemo(() => {
@@ -22,6 +34,20 @@ function App() {
       news: data.news?.filter(n => n.title.toLowerCase().includes(query))
     };
   }, [data, search]);
+
+  // Check alerts and update portfolio prices
+  useEffect(() => {
+    if (data) {
+      const allPrices = [
+        ...(data.nifty_50?.map(s => ({ symbol: s.symbol, price: s.current_price })) || []),
+        ...(data.us_stocks?.map(s => ({ symbol: s.symbol, price: s.current_price })) || []),
+        ...(data.crypto?.map(c => ({ symbol: c.symbol, price: c.current_price })) || [])
+      ];
+
+      checkAlerts(allPrices);
+      updatePrices(allPrices);
+    }
+  }, [data, checkAlerts, updatePrices]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -83,69 +109,53 @@ function App() {
         ) : null;
 
       case 'news':
-        return filteredData?.news ? (
-          <div className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Latest Market News</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">Top financial news from trusted sources</p>
+        const filteredNews = filteredData?.news?.filter(n => {
+          const matchesCategory = newsCategory === 'All' || n.category === newsCategory;
+          const matchesSearch = !newsSearch || n.title.toLowerCase().includes(newsSearch.toLowerCase());
+          return matchesCategory && matchesSearch;
+        });
+
+        return filteredNews ? (
+          <div className="space-y-6 pb-20">
+            <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700">
+              <h2 className="gradient-text text-3xl font-bold mb-2">Latest Market News</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Top financial news from trusted sources • Real-time updates
+              </p>
             </div>
+            <NewsFilters
+              categories={['All', 'Technology', 'Markets', 'Cryptocurrency', 'Economy', 'Business']}
+              selectedCategory={newsCategory}
+              onCategoryChange={setNewsCategory}
+              searchQuery={newsSearch}
+              onSearchChange={setNewsSearch}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredData.news.map((item, i) => (
-                <a
-                  key={i}
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 flex flex-col h-full"
-                >
-                  <div className="aspect-video w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => {
-                          e.currentTarget.src = '';
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <svg className="w-16 h-16 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5 flex flex-col flex-grow">
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        {item.category || 'Business'}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(item.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
-                      {item.title}
-                    </h3>
-                    {item.summary && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-3 flex-grow leading-relaxed">
-                        {item.summary}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <span className="font-medium truncate">{item.source}</span>
-                      <span className="flex items-center gap-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 whitespace-nowrap">
-                        Read more →
-                      </span>
-                    </div>
-                  </div>
-                </a>
+              {filteredNews.map((item, i) => (
+                <NewsCard key={i} item={item} />
               ))}
             </div>
           </div>
         ) : null;
+
+      case 'favorites':
+        return <FavoritesTab data={data} onStockClick={setSelectedStock} />;
+
+      case 'alerts':
+        return (
+          <div className="space-y-6 pb-20">
+            <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700">
+              <h2 className="gradient-text text-3xl font-bold mb-2">Price Alerts</h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Get notified when assets reach your target price
+              </p>
+            </div>
+            <AlertsList />
+          </div>
+        );
+
+      case 'portfolio':
+        return <PortfolioTab data={data} />;
 
       default:
         return null;
@@ -153,17 +163,25 @@ function App() {
   };
 
   return (
-    <MainLayout
-      activeTab={activeTab}
-      onTabChange={(tab) => setActiveTab(tab as 'india' | 'us' | 'crypto' | 'news')}
-      onSearch={setSearch}
-      lastUpdated={lastUpdated}
-      onRefresh={refresh}
-      isRefreshing={isRefreshing}
-    >
-      {renderContent()}
-      {selectedStock && <StockDetail stock={selectedStock} onClose={() => setSelectedStock(null)} />}
-    </MainLayout>
+    <>
+      <MainLayout
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as 'india' | 'us' | 'crypto' | 'news')}
+        onSearch={setSearch}
+        lastUpdated={lastUpdated}
+        onRefresh={refresh}
+        isRefreshing={isRefreshing}
+      >
+        {renderContent()}
+        {selectedStock && <StockDetail stock={selectedStock} onClose={() => setSelectedStock(null)} />}
+      </MainLayout>
+
+      {/* Floating Refresh Button */}
+      <FloatingActionButton
+        onClick={refresh}
+        loading={isRefreshing}
+      />
+    </>
   );
 }
 
