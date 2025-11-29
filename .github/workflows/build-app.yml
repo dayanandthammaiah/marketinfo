@@ -93,7 +93,7 @@ jobs:
     
     - name: Install dependencies
       working-directory: app
-      run: npm ci --prefer-offline --no-audit
+      run: npm ci --prefer-offline --no-audit --legacy-peer-deps
     
     - name: Lint code
       working-directory: app
@@ -165,7 +165,7 @@ jobs:
     
     - name: Install dependencies
       working-directory: app
-      run: npm ci --prefer-offline --no-audit
+      run: npm ci --prefer-offline --no-audit --legacy-peer-deps
     
     - name: Build web (if not cached) & sync to Android
       working-directory: app
@@ -250,7 +250,7 @@ jobs:
     
     - name: Install dependencies
       working-directory: app
-      run: npm ci --prefer-offline --no-audit
+      run: npm ci --prefer-offline --no-audit --legacy-peer-deps
     
     - name: Build web (if not cached) & sync to iOS
       working-directory: app

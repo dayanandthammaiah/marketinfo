@@ -596,9 +596,11 @@ def fetch_crypto_data(top_n=50):
                 macd_slope = macd_hist
                 
                 # Price Changes for multiple timeframes
-                price_change_1m = get_price_change_percentage(coin_id, 30)
-                price_change_3m = get_price_change_percentage(coin_id, 90)
-                price_change_6m = get_price_change_percentage(coin_id, 180)
+                # OPTIMIZATION: Use only data from initial bulk fetch to avoid 150+ sequential API calls
+                # Old code made 3 API calls per coin (1m, 3m, 6m) = 150 calls for 50 coins = 40 minutes!
+                price_change_1m = None  # Would require extra API call - skip for performance
+                price_change_3m = None  # Would require extra API call - skip for performance  
+                price_change_6m = None  # Would require extra API call - skip for performance
                 price_change_1y = coin.get('price_change_percentage_1y_in_currency')
                 price_change_5y = None  # CoinGecko free tier doesn't provide 5y data easily
                 
