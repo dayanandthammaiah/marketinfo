@@ -95,17 +95,23 @@ function App() {
     switch (activeTab) {
       case 'india':
         return filteredData?.nifty ? (
-          <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
+          <div className="w-full overflow-auto">
+            <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
+          </div>
         ) : null;
 
       case 'us':
         return filteredData?.us ? (
-          <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
+          <div className="w-full overflow-auto">
+            <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
+          </div>
         ) : null;
 
       case 'crypto':
         return filteredData?.crypto ? (
-          <CryptoInstitutionalTable data={filteredData.crypto} />
+          <div className="w-full overflow-auto">
+            <CryptoInstitutionalTable data={filteredData.crypto} />
+          </div>
         ) : null;
 
       case 'news':

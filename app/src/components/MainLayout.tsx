@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Menu, X, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper } from 'lucide-react';
+import { Search, Menu, X, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 
@@ -35,9 +35,12 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
 
     const tabs = [
         { id: 'india', label: 'India', icon: TrendingUp },
-        { id: 'us', label: 'US Markets', icon: DollarSign },
+        { id: 'us', label: 'US', icon: DollarSign },
         { id: 'crypto', label: 'Crypto', icon: Bitcoin },
         { id: 'news', label: 'News', icon: Newspaper },
+        { id: 'favorites', label: 'Favorites', icon: Star },
+        { id: 'alerts', label: 'Alerts', icon: Bell },
+        { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     ];
 
     return (
@@ -66,23 +69,23 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                         />
                     </div>
 
-                    {/* Desktop Nav */}
-                    <nav className="hidden md:flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+                    {/* Desktop Nav - Scrollable Tabs */}
+                    <nav className="hidden md:flex items-center gap-1.5 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 p-2 rounded-xl overflow-x-auto scrollbar-thin">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={cn(
-                                    "relative px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 text-sm",
+                                    "relative px-5 py-2.5 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 text-sm whitespace-nowrap flex-shrink-0",
                                     activeTab === tab.id
-                                        ? "text-white shadow-lg"
+                                        ? "text-white shadow-lg scale-105"
                                         : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50"
                                 )}
                             >
                                 {activeTab === tab.id && (
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-lg -z-10" />
                                 )}
-                                <tab.icon size={16} className={activeTab === tab.id ? "opacity-100" : "opacity-70"} />
+                                <tab.icon size={18} className={activeTab === tab.id ? "opacity-100" : "opacity-70"} />
                                 <span>{tab.label}</span>
                             </button>
                         ))}
