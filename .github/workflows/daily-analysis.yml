@@ -39,8 +39,11 @@ jobs:
         pip install -r scripts/requirements.txt
 
     - name: Fetch India Stocks Batch ${{ matrix.batch }}
+      working-directory: scripts
       run: |
         python -c "
+        import sys
+        sys.path.insert(0, '.')
         from fetchers.stocks_async import fetch_stock_data, NIFTY_50_TICKERS
         import json
         batch_size = 10
@@ -49,7 +52,7 @@ jobs:
         end = start + batch_size
         tickers = NIFTY_50_TICKERS[start:end]
         data = fetch_stock_data(tickers)
-        with open('india_batch_${{ matrix.batch }}.json', 'w') as f:
+        with open('../india_batch_${{ matrix.batch }}.json', 'w') as f:
             json.dump(data, f)
         "
 
@@ -87,22 +90,28 @@ jobs:
         pip install -r scripts/requirements.txt
 
     - name: Fetch US Stocks
+      working-directory: scripts
       run: |
         python -c "
+        import sys
+        sys.path.insert(0, '.')
         from fetchers.stocks_async import fetch_stock_data, US_TICKERS
         import json
         data = fetch_stock_data(US_TICKERS)
-        with open('us_stocks.json', 'w') as f:
+        with open('../us_stocks.json', 'w') as f:
             json.dump(data, f)
         "
 
     - name: Fetch Crypto Data
+      working-directory: scripts
       run: |
         python -c "
+        import sys
+        sys.path.insert(0, '.')
         from fetchers.crypto import fetch_crypto_data
         import json
-        data = fetch_crypto_data(50)
-        with open('crypto_data.json', 'w') as f:
+        data = fetch_crypto_data(20)
+        with open('../crypto_data.json', 'w') as f:
             json.dump(data, f)
         "
 
@@ -142,12 +151,15 @@ jobs:
         pip install -r scripts/requirements.txt
 
     - name: Fetch News
+      working-directory: scripts
       run: |
         python -c "
+        import sys
+        sys.path.insert(0, '.')
         from fetchers.news import fetch_news
         import json
         data = fetch_news(50)
-        with open('news_data.json', 'w') as f:
+        with open('../news_data.json', 'w') as f:
             json.dump(data, f)
         "
 

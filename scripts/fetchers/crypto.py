@@ -159,23 +159,27 @@ async def fetch_binance_data(symbol: str) -> Optional[Dict]:
         logger.warning(f"Binance fallback failed for {symbol}: {e}")
     return None
 
-def fetch_crypto_data(top_n=50):
+def fetch_crypto_data(top_n=20):
     """
     Fetch comprehensive crypto data with technical analysis and institutional metrics.
+    Limited to 20 coins to avoid rate limits and ensure fast execution.
     
     Args:
-        top_n: Number of top cryptocurrencies to fetch
+        top_n: Number of top cryptocurrencies to fetch (default 20, max recommended)
     
     Returns:
         List of crypto data dictionaries
     """
     logger.info(f"Fetching top {top_n} cryptocurrencies with comprehensive analysis...")
     try:
-        # Fetch market data with 90-day sparkline
+        # Limit to prevent rate limiting and long execution times
+        actual_limit = min(top_n, 20)
+        
+        # Fetch market data with 7-day sparkline (faster than 90-day)
         coins = cg.get_coins_markets(
             vs_currency='usd',
             order='market_cap_desc',
-            per_page=top_n,
+            per_page=actual_limit,
             page=1,
             sparkline=True,
             price_change_percentage='24h,7d,30d,1y'
@@ -217,12 +221,12 @@ def fetch_crypto_data(top_n=50):
                                  "BEARISH ABOVE" if macd_val < 0 and current_price > ema_200 else \
                                  "BEARISH BELOW"
                 
-                # Price Changes for multiple timeframes
-                price_change_1m = get_price_change_percentage(coin_id, 30)
-                price_change_3m = get_price_change_percentage(coin_id, 90)
-                price_change_6m = get_price_change_percentage(coin_id, 180)
+                # Price Changes (use only what's available from initial fetch - NO additional API calls)
+                price_change_1m = None  # Would require extra API call
+                price_change_3m = None  # Would require extra API call  
+                price_change_6m = None  # Would require extra API call
                 price_change_1y = coin.get('price_change_percentage_1y_in_currency')
-                price_change_5y = None  # CoinGecko free tier doesn't provide 5y data easily
+                price_change_5y = None  # Not available in free tier
                 
                 # Comprehensive Scoring Algorithm (0-100) with detailed breakdown
                 score = 50  # Start neutral

@@ -61,10 +61,20 @@ async def fetch_single_stock(ticker: str, period: str = "1y") -> Optional[Dict]:
         # Current price
         current_price = float(info.get("currentPrice") or hist['Close'].iloc[-1])
         
-        # Calculate 6-month return for relative performance
-        six_months_ago = datetime.now() - timedelta(days=180)
-        hist_6m = hist[hist.index >= six_months_ago]
-        price_6m_return = ((hist_6m['Close'].iloc[-1] - hist_6m['Close'].iloc[0]) / hist_6m['Close'].iloc[0] * 100) if len(hist_6m) > 1 else 0
+        # Calculate 6-month return for relative performance (FIX: Handle timezone-aware dates)
+        try:
+            six_months_ago = datetime.now() - timedelta(days=180)
+            # Convert hist index to timezone-naive for comparison
+            hist_index_naive = hist.index.tz_localize(None) if hist.index.tz is not None else hist.index
+            hist_6m = hist[hist_index_naive >= six_months_ago]
+            
+            if len(hist_6m) > 1:
+                price_6m_return = ((hist_6m['Close'].iloc[-1] - hist_6m['Close'].iloc[0]) / hist_6m['Close'].iloc[0] * 100)
+            else:
+                price_6m_return = 0
+        except Exception as e:
+            logging.warning(f"Could not calculate 6M return for {ticker}: {e}")
+            price_6m_return = 0
         
         # Historical data for chart (last 90 days)
         hist_data = [
