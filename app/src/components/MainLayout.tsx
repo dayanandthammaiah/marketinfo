@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Menu, X, RefreshCw } from 'lucide-react';
+import { Search, Menu, X, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 
@@ -34,10 +34,10 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const tabs = [
-        { id: 'india', label: 'India', gradient: 'from-orange-500 to-green-500' },
-        { id: 'us', label: 'US Markets', gradient: 'from-blue-500 to-red-500' },
-        { id: 'crypto', label: 'Crypto', gradient: 'from-purple-500 to-pink-500' },
-        { id: 'news', label: 'News', gradient: 'from-cyan-500 to-blue-500' },
+        { id: 'india', label: 'India', icon: TrendingUp },
+        { id: 'us', label: 'US Markets', icon: DollarSign },
+        { id: 'crypto', label: 'Crypto', icon: Bitcoin },
+        { id: 'news', label: 'News', icon: Newspaper },
     ];
 
     return (
@@ -66,10 +66,33 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                         />
                     </div>
 
-                    {/* Refresh Button & Last Updated */}
-                    <div className="hidden md:flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                    {/* Desktop Nav */}
+                    <nav className="hidden md:flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => onTabChange(tab.id)}
+                                className={cn(
+                                    "relative px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 text-sm",
+                                    activeTab === tab.id
+                                        ? "text-white shadow-lg"
+                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50"
+                                )}
+                            >
+                                {activeTab === tab.id && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-lg -z-10" />
+                                )}
+                                <tab.icon size={16} className={activeTab === tab.id ? "opacity-100" : "opacity-70"} />
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+
+                    {/* Right Actions (Unified) */}
+                    <div className="flex items-center gap-2">
+                        {/* Last Updated (Desktop only) */}
                         {lastUpdated && (
-                            <span className="flex items-center gap-1">
+                            <span className="hidden lg:flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mr-2">
                                 {activeTab === 'crypto' && (
                                     <span className="relative flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -79,57 +102,28 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                                 Updated {formatRelativeTime(lastUpdated)}
                             </span>
                         )}
+
+                        {/* Refresh Button (Always visible) */}
                         <button
                             onClick={onRefresh}
                             disabled={isRefreshing}
                             className={cn(
-                                "flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-all shadow-sm",
+                                "flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-all shadow-sm",
                                 isRefreshing && "opacity-50 cursor-not-allowed"
                             )}
                             title="Refresh data now"
                         >
-                            <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
                             <span className="hidden lg:inline">Refresh</span>
                         </button>
-                    </div>
 
-                    {/* Desktop Nav */}
-                    <nav className="hidden md:flex items-center gap-2">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => onTabChange(tab.id)}
-                                className={cn(
-                                    "px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300",
-                                    activeTab === tab.id
-                                        ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg shadow-${tab.id === 'india' ? 'orange' : tab.id === 'us' ? 'blue' : tab.id === 'crypto' ? 'purple' : 'cyan'}-500/30`
-                                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                )}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                        <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-700">
-                            <ThemeToggle />
-                        </div>
-                    </nav>
-
-                    {/* Mobile Actions */}
-                    <div className="flex md:hidden items-center gap-2">
-                        <button
-                            onClick={onRefresh}
-                            disabled={isRefreshing}
-                            className={cn(
-                                "p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors",
-                                isRefreshing && "opacity-50 cursor-not-allowed"
-                            )}
-                        >
-                            <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
-                        </button>
+                        {/* Theme Toggle (Always visible) */}
                         <ThemeToggle />
+
+                        {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         >
                             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
@@ -162,12 +156,13 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                                         setIsMenuOpen(false);
                                     }}
                                     className={cn(
-                                        "px-4 py-3 rounded-xl text-left font-semibold transition-all",
+                                        "px-4 py-3 rounded-xl font-semibold transition-all flex items-center gap-2",
                                         activeTab === tab.id
-                                            ? `bg-gradient-to-r ${tab.gradient} text-white shadow-md`
+                                            ? "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-md"
                                             : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                                     )}
                                 >
+                                    <tab.icon size={18} />
                                     {tab.label}
                                 </button>
                             ))}

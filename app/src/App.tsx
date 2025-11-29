@@ -1,160 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useData } from './hooks/useData';
 import { MainLayout } from './components/MainLayout';
-import { ResponsiveTable, type Column } from './components/ResponsiveTable';
+import { InstitutionalStockTable } from './components/InstitutionalStockTable';
+import { CryptoInstitutionalTable } from './components/CryptoInstitutionalTable';
 import { StockDetail } from './components/StockDetail';
-import type { StockData, NewsItem } from './types/index';
-import { cn } from './lib/utils';
-
-// --- Modern Color Configuration ---
-const COLORS = {
-  STRONG_BUY: "text-emerald-600 dark:text-emerald-400 font-bold", // Bright Green
-  BUY: "text-green-500 dark:text-green-400 font-semibold", // Green
-  HOLD: "text-amber-500 dark:text-amber-400 font-medium", // Amber
-  WAIT: "text-sky-500 dark:text-sky-400 font-medium", // Sky Blue
-  AVOID: "text-red-600 dark:text-red-400 font-bold", // Red
-  POSITIVE: "text-emerald-500 dark:text-emerald-400",
-  NEGATIVE: "text-red-500 dark:text-red-400",
-  NEUTRAL: "text-gray-500 dark:text-gray-400",
-};
-
-const getRecColor = (rec: string) => {
-  switch (rec?.toLowerCase()) {
-    case 'strong buy': return COLORS.STRONG_BUY;
-    case 'buy': return COLORS.BUY;
-    case 'hold': return COLORS.HOLD;
-    case 'wait': return COLORS.WAIT;
-    case 'avoid':
-    case 'sell': return COLORS.AVOID;
-    default: return COLORS.NEUTRAL;
-  }
-};
-
-const getValueColor = (value: number | undefined) => {
-  if (!value) return COLORS.NEUTRAL;
-  return value > 0 ? COLORS.POSITIVE : value < 0 ? COLORS.NEGATIVE : COLORS.NEUTRAL;
-};
-
-// --- Columns Configuration ---
-const stockColumns: Column<StockData>[] = [
-  { header: 'Name', accessorKey: 'name', className: 'font-bold text-gray-900 dark:text-gray-100' },
-  { header: 'Price', accessorKey: 'current_price', cell: (s) => `₹${s.current_price?.toLocaleString()}`, mobileLabel: 'Price' },
-  { header: 'Score', accessorKey: 'score', cell: (s) => <span className="font-bold text-blue-600 dark:text-blue-400">{s.score}</span>, mobileLabel: 'Score' },
-  { header: 'Ideal Range', accessorKey: 'ideal_range', cell: (s) => <span className="text-gray-600 dark:text-gray-400 text-xs">{s.ideal_range || '-'}</span>, mobileLabel: 'Target' },
-  { header: 'ROCE', accessorKey: 'roce', cell: (s) => <span className={cn((s.roce || 0) > 0.15 ? COLORS.POSITIVE : COLORS.NEUTRAL)}>{((s.roce || 0) * 100).toFixed(1)}%</span>, mobileLabel: 'ROCE' },
-  { header: 'Rec', accessorKey: 'recommendation', cell: (s) => <span className={getRecColor(s.recommendation)}>{s.recommendation}</span>, mobileLabel: 'Rec' },
-];
-
-const cryptoColumns: Column<StockData>[] = [
-  { header: 'Asset', accessorKey: 'name', className: 'font-bold text-gray-900 dark:text-gray-100' },
-  { header: 'Price', accessorKey: 'current_price', cell: (s) => `$${s.current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, mobileLabel: 'Price' },
-  {
-    header: '24h %', accessorKey: 'price_change_24h', cell: (s) => (
-      <span className={getValueColor(s.price_change_24h)}>
-        {s.price_change_24h ? `${s.price_change_24h > 0 ? '+' : ''}${s.price_change_24h.toFixed(2)}%` : '-'}
-      </span>
-    ), mobileLabel: '24h'
-  },
-  { header: 'Score', accessorKey: 'score', cell: (s) => <span className="font-bold text-blue-600 dark:text-blue-400">{s.score}</span>, mobileLabel: 'Score' },
-  {
-    header: 'RSI', accessorKey: 'rsi', cell: (s) => (
-      <span className={cn(
-        s.rsi && s.rsi < 30 ? COLORS.STRONG_BUY :
-          s.rsi && s.rsi > 70 ? COLORS.AVOID :
-            COLORS.HOLD
-      )}>{s.rsi?.toFixed(0)}</span>
-    ), mobileLabel: 'RSI'
-  },
-  {
-    header: 'Trend', accessorKey: 'supertrend', cell: (s) => (
-      <span className={cn(
-        s.supertrend === 'Bullish' ? COLORS.POSITIVE :
-          s.supertrend === 'Bearish' ? COLORS.NEGATIVE :
-            COLORS.NEUTRAL
-      )}>{s.supertrend || 'N/A'}</span>
-    ), mobileLabel: 'Trend'
-  },
-  { header: 'Rec', accessorKey: 'recommendation', cell: (s) => <span className={getRecColor(s.recommendation)}>{s.recommendation}</span>, mobileLabel: 'Rec' },
-];
-
-// --- Components ---
-const NewsFeed = ({ news }: { news: NewsItem[] }) => {
-  const categoryColors: Record<string, string> = {
-    Markets: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-    Economy: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-    Technology: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
-    Crypto: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-    Science: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-    Business: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
-    Entertainment: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
-    Sports: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-    World: "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300",
-    Politics: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-  };
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {news?.map((item, i) => (
-        <a
-          key={i}
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group block bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:scale-[1.02]"
-        >
-          {item.image && (
-            <div className="h-48 overflow-hidden">
-              <img
-                src={item.image}
-                alt={item.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-            </div>
-          )}
-          <div className="p-4">
-            <div className="flex justify-between items-center mb-2 gap-2">
-              <span className={cn(
-                "text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full",
-                categoryColors[item.category] || "bg-gray-100 text-gray-700"
-              )}>
-                {item.category}
-              </span>
-              <span className="text-xs text-gray-400">
-                {new Date(item.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-            </div>
-            <h3 className="font-bold text-base mb-2 line-clamp-2 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-              {item.title}
-            </h3>
-            {item.summary && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
-                {item.summary}
-              </p>
-            )}
-            <div className="text-xs font-medium text-gray-500 dark:text-gray-400">{item.source}</div>
-          </div>
-        </a>
-      ))}
-    </div>
-  );
-};
-
-const Legend = () => (
-  <div className="flex flex-wrap gap-3 text-xs mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-blue-200 dark:border-gray-600 shadow-sm">
-    <span className="font-bold text-gray-700 dark:text-gray-300">Legend:</span>
-    <span className={COLORS.STRONG_BUY}>● Strong Buy</span>
-    <span className={COLORS.BUY}>● Buy</span>
-    <span className={COLORS.HOLD}>● Hold</span>
-    <span className={COLORS.WAIT}>● Wait</span>
-    <span className={COLORS.AVOID}>● Avoid</span>
-  </div>
-);
+import type { StockData } from './types/index';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('india');
+  const { data, loading, error, lastUpdated, refresh, isRefreshing } = useData();
+  const [activeTab, setActiveTab] = useState<'india' | 'us' | 'crypto' | 'news'>('india');
   const [search, setSearch] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockData | null>(null);
-  const { data, loading, error, lastUpdated, isRefreshing, refresh } = useData();
 
   const filteredData = useMemo(() => {
     if (!data) return null;
@@ -190,20 +46,20 @@ function App() {
         <div className="space-y-8">
           {filteredData?.nifty && filteredData.nifty.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">India Stocks</h2>
-              <ResponsiveTable data={filteredData.nifty} columns={stockColumns} onRowClick={setSelectedStock} />
+              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">India Stocks</h2>
+              <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
             </section>
           )}
           {filteredData?.us && filteredData.us.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">US Stocks</h2>
-              <ResponsiveTable data={filteredData.us} columns={stockColumns} onRowClick={setSelectedStock} />
+              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-600 dark:from-green-400 dark:to-teal-400">US Markets</h2>
+              <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
             </section>
           )}
           {filteredData?.crypto && filteredData.crypto.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600">Crypto</h2>
-              <ResponsiveTable data={filteredData.crypto} columns={cryptoColumns} onRowClick={setSelectedStock} />
+              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600 dark:from-orange-400 dark:to-pink-400">Cryptocurrency</h2>
+              <CryptoInstitutionalTable data={filteredData.crypto} />
             </section>
           )}
         </div>
@@ -211,33 +67,95 @@ function App() {
     }
 
     switch (activeTab) {
-      case 'india': return (
-        <>
-          <Legend />
-          <ResponsiveTable data={data?.nifty_50 || []} columns={stockColumns} onRowClick={setSelectedStock} />
-        </>
-      );
-      case 'us': return (
-        <>
-          <Legend />
-          <ResponsiveTable data={data?.us_stocks || []} columns={stockColumns} onRowClick={setSelectedStock} />
-        </>
-      );
-      case 'crypto': return (
-        <>
-          <Legend />
-          <ResponsiveTable data={data?.crypto || []} columns={cryptoColumns} onRowClick={setSelectedStock} />
-        </>
-      );
-      case 'news': return <NewsFeed news={data?.news || []} />;
-      default: return null;
+      case 'india':
+        return filteredData?.nifty ? (
+          <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
+        ) : null;
+
+      case 'us':
+        return filteredData?.us ? (
+          <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
+        ) : null;
+
+      case 'crypto':
+        return filteredData?.crypto ? (
+          <CryptoInstitutionalTable data={filteredData.crypto} />
+        ) : null;
+
+      case 'news':
+        return filteredData?.news ? (
+          <div className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Latest Market News</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Top financial news from trusted sources</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredData.news.map((item, i) => (
+                <a
+                  key={i}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 flex flex-col h-full"
+                >
+                  <div className="aspect-video w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => {
+                          e.currentTarget.src = '';
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <svg className="w-16 h-16 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 flex flex-col flex-grow">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        {item.category || 'Business'}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(item.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                      {item.title}
+                    </h3>
+                    {item.summary && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-3 flex-grow leading-relaxed">
+                        {item.summary}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <span className="font-medium truncate">{item.source}</span>
+                      <span className="flex items-center gap-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 whitespace-nowrap">
+                        Read more →
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null;
+
+      default:
+        return null;
     }
   };
 
   return (
     <MainLayout
       activeTab={activeTab}
-      onTabChange={setActiveTab}
+      onTabChange={(tab) => setActiveTab(tab as 'india' | 'us' | 'crypto' | 'news')}
       onSearch={setSearch}
       lastUpdated={lastUpdated}
       onRefresh={refresh}

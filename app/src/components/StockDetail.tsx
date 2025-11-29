@@ -68,10 +68,20 @@ export function StockDetail({ stock, onClose }: StockDetailProps) {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
                         <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Current Price</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {stock.symbol?.includes('USDT') || stock.symbol?.includes('USD') ? '$' : '₹'}
-                            {stock.current_price?.toLocaleString()}
-                        </p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                {stock.symbol?.includes('USDT') || stock.symbol?.includes('USD') ? '$' : '₹'}
+                                {stock.current_price?.toLocaleString()}
+                            </p>
+                            {stock.change !== undefined && (
+                                <span className={cn(
+                                    "text-sm font-semibold",
+                                    stock.change >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                )}>
+                                    {stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent?.toFixed(2)}%)
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
                         <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Score</p>

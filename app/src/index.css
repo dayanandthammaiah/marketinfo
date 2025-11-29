@@ -85,10 +85,29 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #1e293b;
+  overflow-x: hidden;
+  /* Dark text for light background */
 }
 
 body.dark {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #e2e8f0;
+  /* Light text for dark background */
+}
+
+/* Ensure readable text in both modes */
+#root {
+  min-height: 100vh;
+  color: inherit;
+}
+
+.light-mode-text {
+  color: #1e293b;
+}
+
+.dark-mode-text {
+  color: #e2e8f0;
 }
 
 /* Professional Number Styling */

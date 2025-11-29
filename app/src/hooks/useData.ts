@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AppData } from '../types/index';
+import { MarketDataService } from '../services/MarketDataService';
 
-const CACHE_KEY = 'marketdata_cache';
+const CACHE_KEY = 'marketdata_cache_v2';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 interface CachedData {
@@ -47,16 +48,8 @@ export const useData = () => {
             // Create new abort controller
             abortControllerRef.current = new AbortController();
 
-            const response = await fetch('/latest_data.json', {
-                signal: abortControllerRef.current.signal,
-                cache: skipCache ? 'no-cache' : 'default',
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch data');
-            }
-
-            const json: AppData = await response.json();
+            // Fetch data from service
+            const json = await MarketDataService.fetchAllData();
 
             // Update state
             setData(json);
@@ -75,6 +68,7 @@ export const useData = () => {
             if (err instanceof Error && err.name === 'AbortError') {
                 return; // Request was cancelled, ignore
             }
+            console.error("Fetch error:", err);
             setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoading(false);
