@@ -4,7 +4,7 @@ import json
 import logging
 import math
 from datetime import datetime
-from fetchers.stocks import fetch_stock_data, NIFTY_50_TICKERS, US_TICKERS
+from fetchers.stocks_async import fetch_stock_data, NIFTY_50_TICKERS, US_TICKERS
 from fetchers.crypto import fetch_crypto_data
 from fetchers.news import fetch_news
 from analysis.metrics import score_stock

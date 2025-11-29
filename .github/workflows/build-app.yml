@@ -1,23 +1,38 @@
-name: Build App & Daily Report
+name: Build & Deploy App
 
 on:
   push:
     branches: [ main ]
   schedule:
-    # Run daily at 6 AM UTC (11:30 AM IST)
-    - cron: '0 6 * * *'
+    - cron: '30 0 * * *' # 6:00 AM IST (00:30 UTC)
   workflow_dispatch:
+
+env:
+  APP_NAME: InvestIQ
+  APP_VERSION: ${{ github.run_number }}
 
 jobs:
   generate-data:
+    name: Generate Market Data
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
     
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('scripts/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
     
     - name: Install Python dependencies
       working-directory: scripts
@@ -26,120 +41,218 @@ jobs:
     
     - name: Generate market data
       working-directory: scripts
+      env:
+        TIMESTAMP: ${{ github.event.head_commit.timestamp }}
       run: |
+        echo "Generating market data..."
         python main.py
+        echo "Data generation complete!"
+    
+    - name: Verify generated data
+      run: |
+        if [ ! -f "app/public/latest_data.json" ]; then
+          echo "Error: latest_data.json not generated"
+          exit 1
+        fi
+        FILE_SIZE=$(stat -f%z "app/public/latest_data.json" 2>/dev/null || stat -c%s "app/public/latest_data.json")
+        echo "Generated data file size: $FILE_SIZE bytes"
+        if [ "$FILE_SIZE" -lt 1000 ]; then
+          echo "Warning: Data file seems too small"
+        fi
     
     - name: Upload generated data
       uses: actions/upload-artifact@v4
       with:
-        name: market-data
+        name: market-data-${{ env.APP_VERSION }}
         path: app/public/latest_data.json
+        retention-days: 7
 
   build-web:
+    name: Build Web App
     needs: generate-data
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
     
-    - uses: actions/download-artifact@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Download market data
+      uses: actions/download-artifact@v4
       with:
-        name: market-data
+        name: market-data-${{ env.APP_VERSION }}
         path: app/public
     
-    - uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: 20
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
     
     - name: Install dependencies
       working-directory: app
-      run: npm install
+      run: npm ci --prefer-offline
+    
+    - name: Lint code
+      working-directory: app
+      run: npm run lint
     
     - name: Build web app
       working-directory: app
-      run: npm run build
+      run: |
+        echo "Building web app..."
+        npm run build
+        echo "Build complete!"
     
-    - uses: actions/upload-artifact@v4
+    - name: Upload web build
+      uses: actions/upload-artifact@v4
       with:
-        name: web-build
+        name: ${{ env.APP_NAME }}-Web-v${{ env.APP_VERSION }}
         path: app/dist
+        retention-days: 30
 
   build-android:
+    name: Build Android APK
     needs: build-web
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
     
-    - uses: actions/download-artifact@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Download market data
+      uses: actions/download-artifact@v4
       with:
-        name: market-data
+        name: market-data-${{ env.APP_VERSION }}
         path: app/public
     
-    - uses: actions/setup-java@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
       with:
         distribution: 'zulu'
         java-version: '21'
     
-    - uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: 20
-        
-    - name: Install Dependencies
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: app
+      run: npm ci --prefer-offline
+    
+    - name: Build web & sync to Android
+      working-directory: app
       run: |
-        cd app
-        npm install
-        
-    - name: Build Web & Sync
-      run: |
-        cd app
         npm run build
         npx cap sync android
-        
-    - name: Build APK
-      run: |
-        cd app/android
-        chmod +x gradlew
-        ./gradlew assembleDebug
     
-    - name: Rename APK
+    - name: Grant execute permission for gradlew
+      working-directory: app/android
+      run: chmod +x gradlew
+    
+    - name: Build APK (Debug)
+      working-directory: app/android
       run: |
-        mv app/android/app/build/outputs/apk/debug/app-debug.apk app/android/app/build/outputs/apk/debug/InvestIQ.apk
-        
-    - uses: actions/upload-artifact@v4
+        echo "Building Android APK..."
+        ./gradlew assembleDebug --no-daemon --stacktrace
+        echo "APK build complete!"
+    
+    - name: Rename & prepare APK
+      run: |
+        APK_PATH="app/android/app/build/outputs/apk/debug/app-debug.apk"
+        NEW_NAME="${{ env.APP_NAME }}-Android-v${{ env.APP_VERSION }}-debug.apk"
+        mv "$APK_PATH" "app/android/app/build/outputs/apk/debug/$NEW_NAME"
+        echo "APK renamed to: $NEW_NAME"
+    
+    - name: Upload Android APK
+      uses: actions/upload-artifact@v4
       with:
-        name: InvestIQ-Android-APK
-        path: app/android/app/build/outputs/apk/debug/InvestIQ.apk
+        name: ${{ env.APP_NAME }}-Android-v${{ env.APP_VERSION }}
+        path: app/android/app/build/outputs/apk/debug/${{ env.APP_NAME }}-Android-v${{ env.APP_VERSION }}-debug.apk
+        retention-days: 30
 
   build-ios:
+    name: Build iOS App
     needs: build-web
     runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v3
     
-    - uses: actions/download-artifact@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Download market data
+      uses: actions/download-artifact@v4
       with:
-        name: market-data
+        name: market-data-${{ env.APP_VERSION }}
         path: app/public
     
-    - uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: 20
-        
-    - name: Install Dependencies
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: app
+      run: npm ci --prefer-offline
+    
+    - name: Build web & sync to iOS
+      working-directory: app
       run: |
-        cd app
-        npm install
-        
-    - name: Build Web & Sync
-      run: |
-        cd app
         npm run build
         npx cap sync ios
     
     - name: Build iOS (Unsigned)
+      working-directory: app/ios/App
       run: |
-        cd app/ios/App
-        xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-        
-    # Note: This produces build artifacts but not a signed IPA. 
-    # To get an IPA, we need signing identities.
+        echo "Building iOS app (unsigned)..."
+        xcodebuild clean build \
+          -workspace App.xcworkspace \
+          -scheme App \
+          -configuration Debug \
+          -sdk iphonesimulator \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        echo "iOS build complete!"
+    
+    - name: Archive iOS build
+      run: |
+        cd app/ios/App/build/Debug-iphonesimulator
+        zip -r "${{ env.APP_NAME }}-iOS-v${{ env.APP_VERSION }}-simulator.zip" App.app
+    
+    - name: Upload iOS build
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.APP_NAME }}-iOS-v${{ env.APP_VERSION }}
+        path: app/ios/App/build/Debug-iphonesimulator/${{ env.APP_NAME }}-iOS-v${{ env.APP_VERSION }}-simulator.zip
+        retention-days: 30
 
+  test-summary:
+    name: Generate Test Summary
+    needs: [build-web, build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Create job summary
+      run: |
+        echo "# Build Summary - v${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Build Status" >> $GITHUB_STEP_SUMMARY
+        echo "- Web Build: ${{ needs.build-web.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Android Build: ${{ needs.build-android.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- iOS Build: ${{ needs.build-ios.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web**: ${{ env.APP_NAME }}-Web-v${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Android APK**: ${{ env.APP_NAME }}-Android-v${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **iOS Simulator**: ${{ env.APP_NAME }}-iOS-v${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Download" >> $GITHUB_STEP_SUMMARY
+        echo "Artifacts are available in the Actions tab for 30 days." >> $GITHUB_STEP_SUMMARY

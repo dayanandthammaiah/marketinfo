@@ -1,16 +1,36 @@
 import { useState } from 'react';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, RefreshCw } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
+
+// Helper function to format relative time
+function formatRelativeTime(date: Date): string {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
 
 interface MainLayoutProps {
     children: React.ReactNode;
     activeTab: string;
     onTabChange: (tab: string) => void;
     onSearch: (query: string) => void;
+    lastUpdated: Date | null;
+    onRefresh: () => void;
+    isRefreshing: boolean;
 }
 
-export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainLayoutProps) {
+export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpdated, onRefresh, isRefreshing }: MainLayoutProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const tabs = [
@@ -46,6 +66,33 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
                         />
                     </div>
 
+                    {/* Refresh Button & Last Updated */}
+                    <div className="hidden md:flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        {lastUpdated && (
+                            <span className="flex items-center gap-1">
+                                {activeTab === 'crypto' && (
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                    </span>
+                                )}
+                                Updated {formatRelativeTime(lastUpdated)}
+                            </span>
+                        )}
+                        <button
+                            onClick={onRefresh}
+                            disabled={isRefreshing}
+                            className={cn(
+                                "flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-all shadow-sm",
+                                isRefreshing && "opacity-50 cursor-not-allowed"
+                            )}
+                            title="Refresh data now"
+                        >
+                            <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                            <span className="hidden lg:inline">Refresh</span>
+                        </button>
+                    </div>
+
                     {/* Desktop Nav */}
                     <nav className="hidden md:flex items-center gap-2">
                         {tabs.map(tab => (
@@ -69,6 +116,16 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
 
                     {/* Mobile Actions */}
                     <div className="flex md:hidden items-center gap-2">
+                        <button
+                            onClick={onRefresh}
+                            disabled={isRefreshing}
+                            className={cn(
+                                "p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors",
+                                isRefreshing && "opacity-50 cursor-not-allowed"
+                            )}
+                        >
+                            <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+                        </button>
                         <ThemeToggle />
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -82,6 +139,11 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch }: MainL
                 {/* Mobile Search & Nav (Collapsible) */}
                 {isMenuOpen && (
                     <div className="md:hidden border-t border-gray-200 dark:border-gray-800 p-4 space-y-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg animate-in slide-in-from-top-4">
+                        {lastUpdated && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2 border-b border-gray-200 dark:border-gray-700">
+                                Updated {formatRelativeTime(lastUpdated)}
+                            </div>
+                        )}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input

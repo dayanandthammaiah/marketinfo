@@ -6,3 +6,6 @@ requests
 pycoingecko
 scipy
 feedparser
+aiohttp
+python-dateutil
+tenacity

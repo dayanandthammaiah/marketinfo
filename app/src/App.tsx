@@ -154,7 +154,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('india');
   const [search, setSearch] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockData | null>(null);
-  const { data, loading, error } = useData();
+  const { data, loading, error, lastUpdated, isRefreshing, refresh } = useData();
 
   const filteredData = useMemo(() => {
     if (!data) return null;
@@ -235,7 +235,14 @@ function App() {
   };
 
   return (
-    <MainLayout activeTab={activeTab} onTabChange={setActiveTab} onSearch={setSearch}>
+    <MainLayout
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      onSearch={setSearch}
+      lastUpdated={lastUpdated}
+      onRefresh={refresh}
+      isRefreshing={isRefreshing}
+    >
       {renderContent()}
       {selectedStock && <StockDetail stock={selectedStock} onClose={() => setSelectedStock(null)} />}
     </MainLayout>

@@ -1,4 +1,4 @@
-name: Daily Institutional Analysis
+name: Daily Institutional Analysis (Optimized)
 
 on:
   push:
@@ -8,7 +8,60 @@ on:
   workflow_dispatch:
 
 jobs:
-  analyze-and-report:
+  # Job 1: Fetch India Stocks (parallelized in batches)
+  fetch-india-stocks:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      matrix:
+       batch: [1, 2, 3, 4, 5]  # Split 50 stocks into 5 batches of 10
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('scripts/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        pip install -r scripts/requirements.txt
+
+    - name: Fetch India Stocks Batch ${{ matrix.batch }}
+      run: |
+        python -c "
+        from fetchers.stocks_async import fetch_stock_data, NIFTY_50_TICKERS
+        import json
+        batch_size = 10
+        batch_num = ${{ matrix.batch }} - 1
+        start = batch_num * batch_size
+        end = start + batch_size
+        tickers = NIFTY_50_TICKERS[start:end]
+        data = fetch_stock_data(tickers)
+        with open('india_batch_${{ matrix.batch }}.json', 'w') as f:
+            json.dump(data, f)
+        "
+
+    - name: Upload India Batch ${{ matrix.batch }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: india-batch-${{ matrix.batch }}
+        path: india_batch_${{ matrix.batch }}.json
+        retention-days: 1
+  
+  # Job 2: Fetch US Stocks & Crypto (in parallel)
+  fetch-us-and-crypto:
     runs-on: ubuntu-latest
     
     steps:
@@ -19,20 +72,262 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
+        cache: 'pip'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('scripts/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         pip install -r scripts/requirements.txt
 
-    - name: Run Analysis & Send Email
+    - name: Fetch US Stocks
+      run: |
+        python -c "
+        from fetchers.stocks_async import fetch_stock_data, US_TICKERS
+        import json
+        data = fetch_stock_data(US_TICKERS)
+        with open('us_stocks.json', 'w') as f:
+            json.dump(data, f)
+        "
+
+    - name: Fetch Crypto Data
+      run: |
+        python -c "
+        from fetchers.crypto import fetch_crypto_data
+        import json
+        data = fetch_crypto_data(50)
+        with open('crypto_data.json', 'w') as f:
+            json.dump(data, f)
+        "
+
+    - name: Upload US & Crypto Data
+      uses: actions/upload-artifact@v4
+      with:
+        name: us-and-crypto
+        path: |
+          us_stocks.json
+          crypto_data.json
+        retention-days: 1
+
+  # Job 3: Fetch News (parallel feed parsing handled internally)
+  fetch-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('scripts/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        pip install -r scripts/requirements.txt
+
+    - name: Fetch News
+      run: |
+        python -c "
+        from fetchers.news import fetch_news
+        import json
+        data = fetch_news(50)
+        with open('news_data.json', 'w') as f:
+            json.dump(data, f)
+        "
+
+    - name: Upload News Data
+      uses: actions/upload-artifact@v4
+      with:
+        name: news-data
+        path: news_data.json
+        retention-days: 1
+
+  # Job 4: Combine, Analyze & Generate Report
+  combine-and-analyze:
+    runs-on: ubuntu-latest
+    needs: [fetch-india-stocks, fetch-us-and-crypto, fetch-news]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        pip install -r scripts/requirements.txt
+
+    # Download all artifacts
+    - name: Download India Batch 1
+      uses: actions/download-artifact@v4
+      with:
+        name: india-batch-1
+        path: ./data
+
+    - name: Download India Batch 2
+      uses: actions/download-artifact@v4
+      with:
+        name: india-batch-2
+        path: ./data
+
+    - name: Download India Batch 3
+      uses: actions/download-artifact@v4
+      with:
+        name: india-batch-3
+        path: ./data
+
+    - name: Download India Batch 4
+      uses: actions/download-artifact@v4
+      with:
+        name: india-batch-4
+        path: ./data
+
+    - name: Download India Batch 5
+      uses: actions/download-artifact@v4
+      with:
+        name: india-batch-5
+        path: ./data
+
+    - name: Download US & Crypto
+      uses: actions/download-artifact@v4
+      with:
+        name: us-and-crypto
+        path: ./data
+
+    - name: Download News
+      uses: actions/download-artifact@v4
+      with:
+        name: news-data
+        path: ./data
+
+    - name: Combine & Analyze Data
       env:
         EMAIL_USER: ${{ secrets.EMAIL_USER }}
         GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         DATE: $(date +'%Y-%m-%d')
       run: |
-        python scripts/main.py
+        python -c "
+        import json
+        import os
+        import math
+        from datetime import datetime
+        from analysis.metrics import score_stock
 
-    - name: Upload Artifacts
+        # Helper function to sanitize data
+        def sanitize_for_json(obj):
+            if isinstance(obj, dict):
+                return {k: sanitize_for_json(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize_for_json(item) for item in obj]
+            elif isinstance(obj, float):
+                if math.isnan(obj) or math.isinf(obj):
+                    return None
+                return obj
+            return obj
+
+        # Load all India batches
+        nifty_data = {}
+        for i in range(1, 6):
+            with open(f'./data/india_batch_{i}.json', 'r') as f:
+                batch = json.load(f)
+                nifty_data.update(batch)
+
+        # Load US stocks
+        with open('./data/us_stocks.json', 'r') as f:
+            us_data = json.load(f)
+
+        # Load crypto
+        with open('./data/crypto_data.json', 'r') as f:
+            crypto_data = json.load(f)
+
+        # Load news
+        with open('./data/news_data.json', 'r') as f:
+            news_data = json.load(f)
+
+        # Analyze & Score Nifty stocks
+        analyzed_nifty = []
+        for ticker, data in nifty_data.items():
+            score, rec, reasons = score_stock(data)
+            data['score'] = score
+            data['recommendation'] = rec
+            data['reasons'] = reasons
+            analyzed_nifty.append(data)
+        analyzed_nifty.sort(key=lambda x: x['score'], reverse=True)
+
+        # Analyze & Score US stocks
+        analyzed_us = []
+        for ticker, data in us_data.items():
+            score, rec, reasons = score_stock(data)
+            data['score'] = score
+            data['recommendation'] = rec
+            data['reasons'] = reasons
+            analyzed_us.append(data)
+        analyzed_us.sort(key=lambda x: x['score'], reverse=True)
+
+        # Generate JSON for App
+        app_data = {
+            'last_updated': datetime.now().isoformat(),
+            'nifty_50': analyzed_nifty,
+            'us_stocks': analyzed_us,
+            'crypto': crypto_data,
+            'news': news_data
+        }
+
+        # Sanitize data
+        app_data = sanitize_for_json(app_data)
+
+        # Save JSON
+        os.makedirs('app/public', exist_ok=True)
+        with open('app/public/latest_data.json', 'w') as f:
+            json.dump(app_data, f, indent=2)
+
+        print(f'Data saved to app/public/latest_data.json')
+        print(f'  - {len(analyzed_nifty)} India stocks')
+        print(f'  - {len(analyzed_us)} US stocks')
+        print(f'  - {len(crypto_data)} crypto assets')
+        print(f'  - {len(news_data)} news articles')
+        "
+
+    - name: Generate & Send Email Report
+      env:
+        EMAIL_USER: ${{ secrets.EMAIL_USER }}
+        GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      continue-on-error: true
+      run: |
+        python -c "
+        import json
+        from analysis.report import generate_html_report
+        from send_email import send_email
+        
+        with open('app/public/latest_data.json', 'r') as f:
+            app_data = json.load(f)
+        
+        html = generate_html_report(app_data)
+        send_email(html)
+        print('Email report sent successfully')
+        "
+
+    - name: Upload Final Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: daily-report
