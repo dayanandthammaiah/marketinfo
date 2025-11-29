@@ -51,6 +51,15 @@
 
   /* Smooth scrolling */
   scroll-behavior: smooth;
+
+  /* Light Mode Colors (Default) */
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-tertiary: #64748B;
+  --border-color: #E2E8F0;
 }
 
 /* Custom Scrollbar Styling */
