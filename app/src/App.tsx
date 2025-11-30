@@ -12,7 +12,8 @@ import { PortfolioTab } from './components/PortfolioTab';
 import { NewsFilters } from './components/NewsFilters';
 import { useAlerts } from './contexts/AlertsContext';
 import { usePortfolio } from './contexts/PortfolioContext';
-import type { StockData } from './types/index';
+import { CryptoDetail } from './components/CryptoDetail';
+import type { StockData, CryptoData } from './types/index';
 
 function App() {
   const { data, loading, error, lastUpdated, refresh, isRefreshing } = useData();
@@ -23,6 +24,7 @@ function App() {
   const [newsCategory, setNewsCategory] = useState('All');
   const [newsSearch, setNewsSearch] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockData | null>(null);
+  const [selectedCrypto, setSelectedCrypto] = useState<CryptoData | null>(null);
 
   const filteredData = useMemo(() => {
     if (!data) return null;
@@ -85,7 +87,7 @@ function App() {
           {filteredData?.crypto && filteredData.crypto.length > 0 && (
             <section>
               <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600 dark:from-orange-400 dark:to-pink-400">Cryptocurrency</h2>
-              <CryptoInstitutionalTable data={filteredData.crypto} />
+              <CryptoInstitutionalTable data={filteredData.crypto} onRowClick={setSelectedCrypto} />
             </section>
           )}
         </div>
@@ -110,7 +112,7 @@ function App() {
       case 'crypto':
         return filteredData?.crypto ? (
           <div className="w-full overflow-auto">
-            <CryptoInstitutionalTable data={filteredData.crypto} />
+            <CryptoInstitutionalTable data={filteredData.crypto} onRowClick={setSelectedCrypto} />
           </div>
         ) : null;
 
@@ -180,6 +182,7 @@ function App() {
       >
         {renderContent()}
         {selectedStock && <StockDetail stock={selectedStock} onClose={() => setSelectedStock(null)} />}
+        {selectedCrypto && <CryptoDetail crypto={selectedCrypto} onClose={() => setSelectedCrypto(null)} />}
       </MainLayout>
 
       {/* Floating Refresh Button */}

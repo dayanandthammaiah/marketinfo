@@ -1,6 +1,7 @@
 import { Search, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -41,43 +42,42 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 text-gray-900 dark:text-gray-100 flex flex-col transition-colors duration-300">
+        <div className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans">
             {/* Top App Bar */}
-            {/* Top App Bar */}
-            <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-300">
+            <header className="sticky top-0 z-50 w-full glass border-b border-white/10 shadow-sm transition-all duration-300">
                 <div className="container mx-auto px-4">
                     {/* Top Row: Logo, Search, Actions */}
                     <div className="h-16 flex items-center justify-between gap-4">
                         {/* Logo */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
-                                <span className="text-white font-bold text-xl">II</span>
+                        <div className="flex items-center gap-3 flex-shrink-0 group cursor-pointer">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 flex items-center justify-center shadow-lg group-hover:shadow-primary-500/30 transition-all duration-300 group-hover:scale-105">
+                                <span className="text-white font-bold text-xl tracking-tighter">II</span>
                             </div>
-                            <span className="font-bold text-xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent hidden sm:block">
+                            <span className="font-bold text-xl bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 bg-clip-text text-transparent hidden sm:block tracking-tight">
                                 InvestIQ
                             </span>
                         </div>
 
                         {/* Search Bar (Desktop) */}
-                        <div className="hidden md:flex flex-1 max-w-md relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <div className="hidden md:flex flex-1 max-w-md relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary-500 transition-colors" size={18} />
                             <input
                                 type="text"
                                 placeholder="Search stocks, crypto, news..."
                                 onChange={(e) => onSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-2 border border-transparent focus:border-primary-500/50 focus:bg-surface focus:ring-4 focus:ring-primary-500/10 focus:outline-none transition-all placeholder:text-muted/70 text-sm"
                             />
                         </div>
 
                         {/* Right Actions */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-3 flex-shrink-0">
                             {/* Last Updated */}
                             {lastUpdated && (
-                                <span className="hidden lg:flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mr-2">
+                                <span className="hidden lg:flex items-center gap-2 text-xs text-muted font-medium mr-2 bg-surface-2 px-3 py-1.5 rounded-full border border-white/5">
                                     {activeTab === 'crypto' && (
                                         <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-main opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success-main"></span>
                                         </span>
                                     )}
                                     Updated {formatRelativeTime(lastUpdated)}
@@ -89,12 +89,12 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                                 onClick={onRefresh}
                                 disabled={isRefreshing}
                                 className={cn(
-                                    "flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-all shadow-sm",
-                                    isRefreshing && "opacity-50 cursor-not-allowed"
+                                    "flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface border border-transparent hover:border-primary-500/30 text-muted hover:text-primary-600 font-medium transition-all active:scale-95",
+                                    isRefreshing && "opacity-70 cursor-wait"
                                 )}
                                 title="Refresh data now"
                             >
-                                <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                                <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-primary-500")} />
                                 <span className="hidden lg:inline">Refresh</span>
                             </button>
 
@@ -105,34 +105,38 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
 
                     {/* Mobile Search (Visible only on mobile) */}
                     <div className="md:hidden pb-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <div className="relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary-500 transition-colors" size={16} />
                             <input
                                 type="text"
                                 placeholder="Search..."
                                 onChange={(e) => onSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-2 border border-transparent focus:border-primary-500/50 focus:bg-surface focus:ring-4 focus:ring-primary-500/10 focus:outline-none transition-all placeholder:text-muted/70 text-sm"
                             />
                         </div>
                     </div>
 
-                    {/* Unified Scrollable Tabs (Visible on all screens) */}
-                    <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 border-t md:border-t-0 border-gray-100 dark:border-gray-800 pt-2 md:pt-0">
+                    {/* Unified Scrollable Tabs */}
+                    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-0 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 border-t md:border-t-0 border-white/10 pt-2 md:pt-0">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={cn(
-                                    "relative px-4 py-2.5 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 text-sm whitespace-nowrap flex-shrink-0 mb-2 md:mb-0",
+                                    "relative px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 text-sm whitespace-nowrap flex-shrink-0 mb-2 md:mb-0 select-none",
                                     activeTab === tab.id
-                                        ? "text-white shadow-md scale-105"
-                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        ? "text-white shadow-lg shadow-primary-500/25 scale-105"
+                                        : "text-muted hover:text-main hover:bg-surface-2"
                                 )}
                             >
                                 {activeTab === tab.id && (
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-lg -z-10" />
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute inset-0 bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 rounded-xl -z-10"
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    />
                                 )}
-                                <tab.icon size={18} className={activeTab === tab.id ? "opacity-100" : "opacity-70"} />
+                                <tab.icon size={18} className={cn("transition-opacity", activeTab === tab.id ? "opacity-100" : "opacity-70")} />
                                 <span>{tab.label}</span>
                             </button>
                         ))}
@@ -140,13 +144,24 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-1 container mx-auto px-4 py-6">
-                {children}
+            {/* Main Content with Page Transitions */}
+            <main className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-safe">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="h-full"
+                    >
+                        {children}
+                    </motion.div>
+                </AnimatePresence>
             </main>
 
             {/* Footer */}
-            <footer className="border-t border-gray-200 dark:border-gray-800 py-4 text-center text-sm text-gray-600 dark:text-gray-400">
+            <footer className="border-t border-white/10 py-6 text-center text-xs text-muted bg-surface/50 backdrop-blur-sm">
                 <p>© 2025 InvestIQ • Powered by open-source APIs</p>
             </footer>
         </div>

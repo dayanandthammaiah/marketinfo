@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface Column<T> {
     header: string;
@@ -52,13 +53,13 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
         <>
             {/* Desktop Table View (Hidden on Mobile) */}
             <div className="hidden md:block">
-                <div className="w-full overflow-x-auto overflow-y-visible rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800"
+                <div className="w-full overflow-x-auto overflow-y-visible rounded-xl border border-white/10 shadow-lg glass scrollbar-thin"
                     style={{
                         WebkitOverflowScrolling: 'touch',
                         scrollbarWidth: 'thin'
                     }}>
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 sticky top-0 z-10">
+                    <table className="min-w-full divide-y divide-white/10">
+                        <thead className="bg-surface-2/50 backdrop-blur-md sticky top-0 z-10">
                             <tr>
                                 {columns.map((col, i) => (
                                     <th
@@ -66,31 +67,36 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
                                         scope="col"
                                         onClick={() => handleSort(col.accessorKey)}
                                         className={cn(
-                                            "px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-all select-none",
-                                            i === 0 && "sticky left-0 z-20 bg-gradient-to-r from-indigo-600 to-purple-600"
+                                            "px-4 py-4 text-left text-xs font-bold text-muted uppercase tracking-wider cursor-pointer hover:text-primary-500 transition-colors select-none",
+                                            i === 0 && "sticky left-0 z-20 bg-surface-2/95 backdrop-blur-md shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)]"
                                         )}
                                     >
                                         <div className="flex items-center gap-2">
                                             {col.header}
                                             {sortKey === col.accessorKey ? (
-                                                sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                                <span className="text-primary-500">
+                                                    {sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                                                </span>
                                             ) : (
-                                                <ArrowUpDown size={14} className="opacity-50" />
+                                                <ArrowUpDown size={14} className="opacity-30 hover:opacity-100 transition-opacity" />
                                             )}
                                         </div>
                                     </th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+                        <tbody className="divide-y divide-white/5 bg-surface/50">
                             {sortedData.map((item, rowIdx) => (
-                                <tr
+                                <motion.tr
                                     key={rowIdx}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: rowIdx * 0.05, duration: 0.3 }}
                                     onClick={() => onRowClick?.(item)}
                                     className={cn(
-                                        "transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:shadow-md",
+                                        "transition-all duration-200 hover:bg-primary-50/50 dark:hover:bg-primary-900/20",
                                         onRowClick && "cursor-pointer",
-                                        rowIdx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50/50 dark:bg-gray-800/50"
+                                        rowIdx % 2 === 0 ? "bg-transparent" : "bg-surface-2/30"
                                     )}
                                 >
                                     {columns.map((col, colIdx) => (
@@ -99,18 +105,18 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
                                             className={cn(
                                                 "px-4 py-4 text-sm whitespace-nowrap",
                                                 col.className,
-                                                colIdx === 0 && "sticky left-0 z-10 font-bold bg-inherit shadow-[4px_0_6px_-2px_rgba(0,0,0,0.1)]"
+                                                colIdx === 0 && "sticky left-0 z-10 font-bold bg-surface/95 backdrop-blur-sm shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)]"
                                             )}
                                         >
                                             {renderCellValue(col, item)}
                                         </td>
                                     ))}
-                                </tr>
+                                </motion.tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-                <div className="mt-2 px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg text-center text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                <div className="mt-2 px-4 py-3 rounded-xl text-center text-xs font-medium text-muted border border-white/10 bg-surface-2/50">
                     <span className="inline-flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
@@ -124,32 +130,38 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
             </div>
 
             {/* Mobile Card View (Visible on Mobile Only) */}
-            <div className="md:hidden space-y-3 pb-4">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-xl text-sm font-semibold text-center shadow-lg">
+            <div className="md:hidden space-y-4 pb-4">
+                <div className="bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 text-white px-5 py-3 rounded-2xl text-sm font-bold text-center shadow-lg shadow-primary-500/20">
                     {sortedData.length} Results • Tap card for details
                 </div>
-                {sortedData.map((item, idx) => (
-                    <div
-                        key={idx}
-                        onClick={() => onRowClick?.(item)}
-                        className={cn(
-                            "bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg border-2 border-gray-100 dark:border-gray-700 space-y-3",
-                            "hover:shadow-2xl hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200",
-                            onRowClick && "cursor-pointer active:scale-[0.98]"
-                        )}
-                    >
-                        {columns.map((col, colIdx) => (
-                            <div key={colIdx} className="flex justify-between items-start gap-4 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide min-w-[110px] flex-shrink-0">
-                                    {col.mobileLabel || col.header}
-                                </span>
-                                <span className={cn("text-sm text-right font-semibold break-words", col.className)}>
-                                    {renderCellValue(col, item)}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                ))}
+                <AnimatePresence>
+                    {sortedData.map((item, idx) => (
+                        <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            onClick={() => onRowClick?.(item)}
+                            className={cn(
+                                "glass rounded-2xl p-5 space-y-3 relative overflow-hidden",
+                                "active:scale-[0.98] transition-transform duration-200",
+                                onRowClick && "cursor-pointer"
+                            )}
+                        >
+                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary-500 to-secondary-500 opacity-80" />
+                            {columns.map((col, colIdx) => (
+                                <div key={colIdx} className="flex justify-between items-start gap-4 py-1.5 border-b border-white/5 last:border-0">
+                                    <span className="text-xs font-bold text-muted uppercase tracking-wide min-w-[110px] flex-shrink-0">
+                                        {col.mobileLabel || col.header}
+                                    </span>
+                                    <span className={cn("text-sm text-right font-semibold break-words", col.className)}>
+                                        {renderCellValue(col, item)}
+                                    </span>
+                                </div>
+                            ))}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
             </div>
         </>
     );

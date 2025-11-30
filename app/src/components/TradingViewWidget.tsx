@@ -5,13 +5,15 @@ interface TradingViewWidgetProps {
     type?: 'stock' | 'crypto';
     theme?: 'light' | 'dark';
     height?: number;
+    interval?: 'D' | 'W' | 'M';
 }
 
 export function TradingViewWidget({
     symbol,
     type = 'stock',
     theme = 'light',
-    height = 500
+    height = 500,
+    interval = 'D'
 }: TradingViewWidgetProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +52,7 @@ export function TradingViewWidget({
                     container_id: containerRef.current.id,
                     autosize: true,
                     symbol: tvSymbol,
-                    interval: 'D',
+                    interval: interval,
                     timezone: 'Etc/UTC',
                     theme: theme,
                     style: '1',
@@ -83,7 +85,7 @@ export function TradingViewWidget({
                 container_id: containerRef.current.id,
                 autosize: true,
                 symbol: tvSymbol,
-                interval: 'D',
+                interval: interval,
                 timezone: 'Etc/UTC',
                 theme: theme,
                 style: '1',
@@ -111,7 +113,7 @@ export function TradingViewWidget({
                 containerRef.current.innerHTML = '';
             }
         };
-    }, [symbol, type, theme, height]);
+    }, [symbol, type, theme, height, interval]);
 
     return (
         <div className="w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg">

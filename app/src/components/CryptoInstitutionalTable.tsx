@@ -18,10 +18,10 @@ function getTrendBadge(trend: string) {
     const isBullish = trend.toUpperCase().includes('BULLISH');
     return (
         <span className={cn(
-            "px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide",
+            "px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide shadow-sm",
             isBullish
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800"
         )}>
             {trend}
         </span>
@@ -35,19 +35,19 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
             accessorKey: 'name',
             mobileLabel: 'Asset',
             cell: (crypto) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     {crypto.image && (
                         <img
                             src={crypto.image}
                             alt={crypto.name}
-                            className="w-8 h-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-700"
+                            className="w-9 h-9 rounded-full ring-2 ring-white/20 shadow-md"
                         />
                     )}
                     <div className="flex flex-col">
-                        <span className="font-bold text-gray-900 dark:text-gray-100">
+                        <span className="font-bold text-main text-sm">
                             {crypto.name}
                         </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 uppercase font-mono">
+                        <span className="text-xs text-muted font-mono uppercase tracking-wider">
                             {crypto.symbol}
                         </span>
                     </div>
@@ -60,7 +60,7 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
             mobileLabel: 'Price',
             className: 'font-mono font-semibold',
             cell: (crypto) => (
-                <span className="text-gray-900 dark:text-gray-100">
+                <span className="text-main">
                     ${crypto.current_price.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 8
@@ -77,14 +77,20 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
                 const change = crypto.price_change_24h || 0;
                 const percent = crypto.price_change_percentage_24h || 0;
                 const colors = getPriceChangeColor(percent);
+                const idealRange = formatIdealRange('price_change_24h', 'crypto');
                 return (
                     <div className="flex flex-col gap-0.5">
-                        <span className={`${colors.badge} px-2 py-0.5 rounded-full text-xs font-bold`}>
+                        <span className={`${colors.badge} px-2 py-0.5 rounded-full text-xs font-bold w-fit`}>
                             {percent > 0 ? '+' : ''}{percent.toFixed(2)}%
                         </span>
-                        <span className={`text-xs ${colors.text}`}>
+                        <span className={`text-xs ${colors.text} font-medium`}>
                             ${change > 0 ? '+' : ''}{change.toFixed(2)}
                         </span>
+                        {idealRange && (
+                            <span className="text-[10px] text-muted opacity-80">
+                                {idealRange}
+                            </span>
+                        )}
                     </div>
                 );
             },
@@ -102,7 +108,7 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
                         ? `$${(mcap / 1e6).toFixed(2)}M`
                         : `$${mcap.toLocaleString()}`;
                 return (
-                    <span className="text-gray-700 dark:text-gray-300">
+                    <span className="text-muted font-medium">
                         {formatted}
                     </span>
                 );
@@ -118,11 +124,11 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
                 const idealRange = formatIdealRange('rsi', 'crypto');
                 return (
                     <div className="flex flex-col gap-0.5">
-                        <span className={`${colors.badge} px-2 py-1 rounded-full text-xs font-bold`}>
+                        <span className={`${colors.badge} px-2 py-1 rounded-full text-xs font-bold w-fit`}>
                             {rsi.toFixed(1)}
                         </span>
                         {idealRange && (
-                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            <span className="text-[10px] text-muted opacity-80">
                                 {idealRange}
                             </span>
                         )}
@@ -153,28 +159,28 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
 
     return (
         <div className="space-y-4">
-            <div className="glass rounded-t-xl px-4 py-3 mb-0 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                        <h3 className="gradient-text text-lg font-bold mb-1">
+                        <h3 className="text-xl font-bold mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                             Crypto Market Analysis
                         </h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                        <p className="text-xs text-muted font-medium">
                             Real-time prices and technical indicators with color-coded signals
                         </p>
                     </div>
-                    <div className="flex items-center gap-3 text-xs">
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-green-500"></div>
-                            <span className="text-gray-600 dark:text-gray-400">Buy Signal</span>
+                    <div className="flex items-center gap-4 text-xs font-medium">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-success-main shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+                            <span className="text-muted">Buy Signal</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400"></div>
-                            <span className="text-gray-600 dark:text-gray-400">Neutral</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-warning-main shadow-[0_0_8px_rgba(245,158,11,0.4)]"></div>
+                            <span className="text-muted">Neutral</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-500"></div>
-                            <span className="text-gray-600 dark:text-gray-400">Sell Signal</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-danger-main shadow-[0_0_8px_rgba(239,68,68,0.4)]"></div>
+                            <span className="text-muted">Sell Signal</span>
                         </div>
                     </div>
                 </div>

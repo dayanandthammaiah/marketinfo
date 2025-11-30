@@ -6,7 +6,7 @@ import {
     getScoreColor,
     getMetricColor
 } from '../utils/metricColors';
-import { formatIdealRange } from '../utils/idealRanges';
+import { getIdealRange, formatIdealRange } from '../utils/idealRanges';
 
 interface InstitutionalStockTableProps {
     data: StockData[];
@@ -20,17 +20,18 @@ function MetricWithIdeal({ value, displayValue, metricKey, type = 'positive' }: 
     metricKey: string;
     type?: 'positive' | 'negative';
 }) {
-    const colors = getMetricColor(value, type);
-    const idealRange = formatIdealRange(metricKey, 'stock');
+    const ideal = getIdealRange(metricKey, 'stock');
+    const colors = getMetricColor(value, type, ideal || undefined);
+    const idealRangeText = formatIdealRange(metricKey, 'stock');
 
     return (
         <div className="flex flex-col gap-0.5">
             <span className={`${colors.text} font-semibold font-mono`}>
                 {displayValue}
             </span>
-            {idealRange && (
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">
-                    {idealRange}
+            {idealRangeText && (
+                <span className="text-[10px] text-muted font-normal opacity-80">
+                    {idealRangeText}
                 </span>
             )}
         </div>
@@ -45,10 +46,10 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             mobileLabel: 'Stock',
             cell: (stock) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-gray-900 dark:text-gray-100">
+                    <span className="font-bold text-main">
                         {stock.name}
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-xs text-muted font-mono">
                         {stock.symbol}
                     </span>
                 </div>
@@ -64,11 +65,11 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 const prefix = isIndian ? '₹' : '$';
                 return (
                     <div className="flex flex-col">
-                        <span className="text-gray-900 dark:text-gray-100">
+                        <span className="text-main">
                             {prefix}{stock.current_price.toFixed(2)}
                         </span>
                         {stock.ideal_range && (
-                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            <span className="text-[10px] text-muted opacity-80">
                                 Range: {stock.ideal_range}
                             </span>
                         )}
@@ -216,8 +217,8 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                         <span className={`${colors.badge} px-3 py-1 rounded-full text-sm font-bold inline-block`}>
                             {score.toFixed(0)}
                         </span>
-                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                            Target: 85
+                        <span className="text-[10px] text-muted opacity-80">
+                            {formatIdealRange('score', 'stock')}
                         </span>
                     </div>
                 );
@@ -239,29 +240,29 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
     ];
 
     return (
-        <div className="w-full">
-            <div className="glass rounded-t-xl px-4 py-3 mb-0 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="w-full space-y-4">
+            <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                        <h3 className="gradient-text text-lg font-bold mb-1">
+                        <h3 className="text-xl font-bold mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                             Institutional Analysis
                         </h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                            All metrics color-coded with ideal target values displayed
+                        <p className="text-xs text-muted font-medium">
+                            AI-powered metrics with color-coded performance indicators
                         </p>
                     </div>
-                    <div className="flex items-center gap-3 text-xs">
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-green-500"></div>
-                            <span className="text-gray-600 dark:text-gray-400">Excellent</span>
+                    <div className="flex items-center gap-4 text-xs font-medium">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-success-main shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+                            <span className="text-muted">Excellent</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400"></div>
-                            <span className="text-gray-600 dark:text-gray-400">Fair</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-warning-main shadow-[0_0_8px_rgba(245,158,11,0.4)]"></div>
+                            <span className="text-muted">Fair</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-500"></div>
-                            <span className="text-gray-600 dark:text-gray-400">Poor</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-danger-main shadow-[0_0_8px_rgba(239,68,68,0.4)]"></div>
+                            <span className="text-muted">Poor</span>
                         </div>
                     </div>
                 </div>
