@@ -100,6 +100,9 @@ async function fetchRSSNews(): Promise<NewsItem[]> {
         'https://feeds.bloomberg.com/markets/news.rss',
         'https://www.reuters.com/rssFeed/businessNews',
         'https://finance.yahoo.com/news/rssindex',
+        'https://www.cnbc.com/id/10001147/device/rss/rss.html',
+        'https://www.ft.com/rss/home/us',
+        'https://www.coindesk.com/arc/outboundfeeds/rss/'
     ];
 
     const results = await Promise.allSettled(

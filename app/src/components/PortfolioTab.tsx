@@ -97,7 +97,7 @@ export function PortfolioTab({ data }: PortfolioTabProps) {
         <div className="space-y-8 pb-20">
             {/* Header with Summary */}
             <div className="glass rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="gradient-text text-3xl font-bold mb-4">Portfolio</h2>
+                <h2 className="gradient-text m3-headline-small mb-4">Portfolio</h2>
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

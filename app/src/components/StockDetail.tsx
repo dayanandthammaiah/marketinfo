@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, LineSeries } from 'lightweight-charts';
+import { useState } from 'react';
 import { ArrowLeft, Bell } from 'lucide-react';
 import type { StockData } from '../types/index';
 import { cn } from '../lib/utils';
-import { TradingViewWidget } from './TradingViewWidget';
+import { lazy, Suspense } from 'react';
+const TradingViewWidget = lazy(() => import('./TradingViewWidget').then(m => ({ default: m.TradingViewWidget })));
 import { AddAlertDialog } from './AddAlertDialog';
 import { FavoriteButton } from './FavoriteButton';
+import { CandlestickChart } from './CandlestickChart';
+import { IndicatorPanel } from './IndicatorPanel';
+import { PeersCard } from './PeersCard';
+import { AnalystRatingsCard } from './AnalystRatingsCard';
+import { useData } from '../hooks/useData';
 
 interface StockDetailProps {
     stock: StockData;
@@ -13,46 +18,10 @@ interface StockDetailProps {
 }
 
 export function StockDetail({ stock, onClose }: StockDetailProps) {
-    const chartContainerRef = useRef<HTMLDivElement>(null);
     const [showAlertDialog, setShowAlertDialog] = useState(false);
-
-    useEffect(() => {
-        if (!chartContainerRef.current || !stock.history || stock.history.length === 0) return;
-
-        const chart = createChart(chartContainerRef.current, {
-            layout: {
-                background: { type: ColorType.Solid, color: 'transparent' },
-                textColor: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
-            },
-            width: chartContainerRef.current.clientWidth,
-            height: 300,
-            grid: {
-                vertLines: { color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb' },
-                horzLines: { color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb' },
-            },
-        });
-
-        const lineSeries = chart.addSeries(LineSeries, {
-            color: '#2563eb',
-            lineWidth: 2,
-        });
-
-        lineSeries.setData(stock.history);
-        chart.timeScale().fitContent();
-
-        const handleResize = () => {
-            if (chartContainerRef.current) {
-                chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            chart.remove();
-        };
-    }, [stock]);
+    const [showSMA, setShowSMA] = useState(true);
+    const [showEMA, setShowEMA] = useState(true);
+    const { data: appData } = useData();
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-gray-900 animate-in slide-in-from-bottom-4">
@@ -135,9 +104,31 @@ export function StockDetail({ stock, onClose }: StockDetailProps) {
 
                 {/* Chart */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                    <h3 className="font-bold mb-4 text-gray-900 dark:text-white">Price History (90 Days)</h3>
-                    <div ref={chartContainerRef} className="w-full h-[300px]" />
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-gray-900 dark:text-white">Price History (90 Days)</h3>
+                        <div className="flex items-center gap-2 text-sm">
+                            <label className="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" checked={showSMA} onChange={() => setShowSMA(v => !v)} />
+                                <span>SMA</span>
+                            </label>
+                            <label className="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" checked={showEMA} onChange={() => setShowEMA(v => !v)} />
+                                <span>EMA</span>
+                            </label>
+                        </div>
+                    </div>
+                    <CandlestickChart history={stock.history} showSMA={showSMA} showEMA={showEMA} height={300} />
                 </div>
+
+                {/* Indicators */}
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                    <h3 className="font-bold mb-2 text-gray-900 dark:text-white">Indicators</h3>
+                    <IndicatorPanel prices={stock.history} />
+                </div>
+
+                {/* Peers and Analyst Ratings */}
+                <PeersCard current={stock} appData={appData} />
+                <AnalystRatingsCard stock={stock} />
 
                 {/* TradingView Advanced Chart */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border dark:border-gray-700">
@@ -145,12 +136,14 @@ export function StockDetail({ stock, onClose }: StockDetailProps) {
                         Advanced Technical Analysis
                         <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-2">Powered by TradingView</span>
                     </h3>
-                    <TradingViewWidget
-                        symbol={stock.symbol}
-                        type="stock"
-                        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                        height={500}
-                    />
+                    <Suspense fallback={<div className="w-full h-[500px] rounded-xl bg-surface-2 animate-pulse" /> }>
+                        <TradingViewWidget
+                            symbol={stock.symbol}
+                            type="stock"
+                            theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                            height={500}
+                        />
+                    </Suspense>
                 </div>
 
                 {/* Recommendation */}

@@ -9,6 +9,8 @@ import { fetchWithFallback, fetchWithTimeout, safeJsonParse, rateLimiter, type D
 // API Keys from environment
 const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_API_KEY || '';
 const ALPHA_VANTAGE_KEY = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY || '';
+const POLYGON_KEY = import.meta.env.VITE_POLYGON_API_KEY || '';
+const TWELVEDATA_KEY = import.meta.env.VITE_TWELVEDATA_API_KEY || '';
 
 // Stock symbols for different markets
 const NIFTY_50_SYMBOLS = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'HINDUNILVR', 'ITC', 'SBIN', 'BHARTIARTL', 'KOTAKBANK'];
@@ -49,13 +51,37 @@ async function fetchAlphaVantageQuote(symbol: string): Promise<any> {
  * Fetch stock data from Yahoo Finance (public endpoint)
  */
 async function fetchYahooFinance(symbol: string): Promise<any> {
-    // Using Yahoo Finance v8 API (public, no auth required)
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
     const response = await fetchWithTimeout(url);
-
     if (!response.ok) throw new Error(`Yahoo Finance error: ${response.status}`);
     const data = await safeJsonParse<any>(response);
     return data?.chart?.result?.[0];
+}
+
+/**
+ * Fetch stock quote from Polygon.io
+ */
+async function fetchPolygonQuote(symbol: string): Promise<any> {
+    if (!POLYGON_KEY) throw new Error('Polygon API key not configured');
+    await rateLimiter.waitForSlot('polygon', 5, 60000); // simple limit
+    const url = `https://api.polygon.io/v2/last/trade/${symbol}?apiKey=${POLYGON_KEY}`;
+    const response = await fetchWithTimeout(url);
+    if (!response.ok) throw new Error(`Polygon error: ${response.status}`);
+    const data = await safeJsonParse<any>(response);
+    return data?.results || data; // trade object contains p (price)
+}
+
+/**
+ * Fetch stock quote from Twelve Data
+ */
+async function fetchTwelveDataQuote(symbol: string): Promise<any> {
+    if (!TWELVEDATA_KEY) throw new Error('TwelveData API key not configured');
+    await rateLimiter.waitForSlot('twelvedata', 8, 60000);
+    const url = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${TWELVEDATA_KEY}`;
+    const response = await fetchWithTimeout(url);
+    if (!response.ok) throw new Error(`TwelveData error: ${response.status}`);
+    const data = await safeJsonParse<any>(response);
+    return data;
 }
 
 /**
@@ -85,6 +111,16 @@ function normalizeStockData(symbol: string, rawData: any, source: string): Stock
         change = meta?.regularMarketChange || 0;
         changePercent = meta?.regularMarketChangePercent || 0;
         volume = meta?.regularMarketVolume?.toString() || '0';
+    } else if (source === 'polygon' && rawData) {
+        const price = rawData.p || rawData.price || 0;
+        current_price = price;
+        change = 0;
+        changePercent = 0;
+    } else if (source === 'twelve' && rawData) {
+        current_price = parseFloat(rawData.price || '0');
+        change = parseFloat(rawData.change || '0');
+        changePercent = parseFloat(rawData.percent_change || '0');
+        volume = rawData.volume || '0';
     }
 
     // Generate reasonable defaults for missing data
@@ -131,40 +167,27 @@ async function fetchStockQuote(symbol: string, isUSStock: boolean = true): Promi
     // For US stocks
     if (isUSStock) {
         if (FINNHUB_KEY) {
-            sources.push({
-                name: 'Finnhub',
-                priority: 1,
-                fetch: () => fetchFinnhubQuote(symbol),
-            });
+            sources.push({ name: 'Finnhub', priority: 1, fetch: () => fetchFinnhubQuote(symbol) });
         }
-
-        sources.push({
-            name: 'Yahoo Finance',
-            priority: 2,
-            fetch: () => fetchYahooFinance(symbol),
-        });
-
+        // Public Yahoo fallback
+        sources.push({ name: 'Yahoo Finance', priority: 5, fetch: () => fetchYahooFinance(symbol) });
         if (ALPHA_VANTAGE_KEY) {
-            sources.push({
-                name: 'Alpha Vantage',
-                priority: 3,
-                fetch: () => fetchAlphaVantageQuote(symbol),
-            });
+            sources.push({ name: 'Alpha Vantage', priority: 2, fetch: () => fetchAlphaVantageQuote(symbol) });
+        }
+        if (POLYGON_KEY) {
+            sources.push({ name: 'Polygon', priority: 3, fetch: () => fetchPolygonQuote(symbol) });
+        }
+        if (TWELVEDATA_KEY) {
+            sources.push({ name: 'Twelve Data', priority: 4, fetch: () => fetchTwelveDataQuote(symbol) });
         }
     } else {
         // For Indian stocks
-        sources.push({
-            name: 'Yahoo Finance',
-            priority: 1,
-            fetch: () => fetchYahooFinance(`${symbol}.NS`),
-        });
-
+        sources.push({ name: 'Yahoo Finance', priority: 4, fetch: () => fetchYahooFinance(`${symbol}.NS`) });
         if (ALPHA_VANTAGE_KEY) {
-            sources.push({
-                name: 'Alpha Vantage',
-                priority: 2,
-                fetch: () => fetchAlphaVantageQuote(symbol),
-            });
+            sources.push({ name: 'Alpha Vantage', priority: 2, fetch: () => fetchAlphaVantageQuote(symbol) });
+        }
+        if (TWELVEDATA_KEY) {
+            sources.push({ name: 'Twelve Data', priority: 3, fetch: () => fetchTwelveDataQuote(`${symbol}.NS`) });
         }
     }
 

@@ -244,7 +244,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                        <h3 className="text-xl font-bold mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                        <h3 className="m3-title-large mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                             Institutional Analysis
                         </h3>
                         <p className="text-xs text-muted font-medium">

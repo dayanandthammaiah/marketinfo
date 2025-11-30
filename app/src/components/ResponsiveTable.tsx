@@ -52,9 +52,10 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
         <>
             {/* Desktop Table View */}
             <div className="hidden md:block w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                {/* Horizontal scroll only; let main page handle vertical scroll */}
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                     <table className="w-full border-collapse text-sm text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium sticky top-0 z-10">
+                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium sticky top-0 z-20">
                             <tr>
                                 {columns.map((col, i) => (
                                     <th

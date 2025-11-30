@@ -3,8 +3,11 @@ import { useData } from './hooks/useData';
 import { MainLayout } from './components/MainLayout';
 import { InstitutionalStockTable } from './components/InstitutionalStockTable';
 import { CryptoInstitutionalTable } from './components/CryptoInstitutionalTable';
-import { StockDetail } from './components/StockDetail';
+import { lazy, Suspense } from 'react';
+const StockDetail = lazy(() => import('./components/StockDetail').then(m => ({ default: m.StockDetail })));
+const CryptoDetail = lazy(() => import('./components/CryptoDetail').then(m => ({ default: m.CryptoDetail })));
 import { NewsCard } from './components/NewsCard';
+import { PullToRefresh } from './components/PullToRefresh';
 import { FloatingActionButton } from './components/FloatingActionButton';
 import { FavoritesTab } from './components/FavoritesTab';
 import { AlertsList } from './components/AlertsList';
@@ -12,7 +15,6 @@ import { PortfolioTab } from './components/PortfolioTab';
 import { NewsFilters } from './components/NewsFilters';
 import { useAlerts } from './contexts/AlertsContext';
 import { usePortfolio } from './contexts/PortfolioContext';
-import { CryptoDetail } from './components/CryptoDetail';
 import type { StockData, CryptoData } from './types/index';
 import { RefreshCw } from 'lucide-react';
 
@@ -75,19 +77,19 @@ function App() {
         <div className="space-y-8">
           {filteredData?.nifty && filteredData.nifty.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">India Stocks</h2>
+              <h2 className="m3-headline-small mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">India Stocks</h2>
               <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
             </section>
           )}
           {filteredData?.us && filteredData.us.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-600 dark:from-green-400 dark:to-teal-400">US Markets</h2>
+              <h2 className="m3-headline-small mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-600 dark:from-green-400 dark:to-teal-400">US Markets</h2>
               <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
             </section>
           )}
           {filteredData?.crypto && filteredData.crypto.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600 dark:from-orange-400 dark:to-pink-400">Cryptocurrency</h2>
+              <h2 className="m3-headline-small mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-pink-600 dark:from-orange-400 dark:to-pink-400">Cryptocurrency</h2>
               <CryptoInstitutionalTable data={filteredData.crypto} onRowClick={setSelectedCrypto} />
             </section>
           )}
@@ -128,7 +130,7 @@ function App() {
           <div className="space-y-6 pb-20">
             <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h2 className="gradient-text text-3xl font-bold mb-2">Latest Market News</h2>
+                <h2 className="gradient-text m3-headline-small mb-2">Latest Market News</h2>
                 <p className="text-gray-600 dark:text-gray-400">
                   Top financial news from trusted sources • Real-time updates
                 </p>
@@ -143,16 +145,20 @@ function App() {
               </button>
             </div>
             <NewsFilters
-              categories={['All', 'Technology', 'Markets', 'Cryptocurrency', 'Economy', 'Business']}
+              categories={['All', 'Technology', 'AI', 'World Markets', 'Science', 'Business', 'Entertainment', 'Cryptocurrency']}
               selectedCategory={newsCategory}
               onCategoryChange={setNewsCategory}
               searchQuery={newsSearch}
               onSearchChange={setNewsSearch}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredNews.map((item, i) => (
-                <NewsCard key={i} item={item} />
-              ))}
+            <div className="-mx-4 md:mx-0">
+              <PullToRefresh onRefresh={refresh} containerSelector="#app-main-scroll">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
+                  {filteredNews.map((item, i) => (
+                    <NewsCard key={i} item={item} />
+                  ))}
+                </div>
+              </PullToRefresh>
             </div>
           </div>
         ) : null;
@@ -192,8 +198,10 @@ function App() {
         isRefreshing={isRefreshing}
       >
         {renderContent()}
-        {selectedStock && <StockDetail stock={selectedStock} onClose={() => setSelectedStock(null)} />}
-        {selectedCrypto && <CryptoDetail crypto={selectedCrypto} onClose={() => setSelectedCrypto(null)} />}
+        <Suspense fallback={null}>
+          {selectedStock && <StockDetail stock={selectedStock} onClose={() => setSelectedStock(null)} />}
+          {selectedCrypto && <CryptoDetail crypto={selectedCrypto} onClose={() => setSelectedCrypto(null)} />}
+        </Suspense>
       </MainLayout>
 
       {/* Floating Refresh Button */}

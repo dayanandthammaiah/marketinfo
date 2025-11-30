@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { TradingViewWidget } from './TradingViewWidget';
+import { useState, lazy, Suspense } from 'react';
 import { cn } from '../lib/utils';
+
+const TradingViewWidget = lazy(() => import('./TradingViewWidget').then(m => ({ default: m.TradingViewWidget })));
 
 interface AdvancedChartTabsProps {
   symbol: string;
@@ -35,7 +36,9 @@ export function AdvancedChartTabs({ symbol, type = 'stock' }: AdvancedChartTabsP
           </button>
         ))}
       </div>
-      <TradingViewWidget symbol={symbol} type={type} theme={theme} height={500} interval={interval} />
+      <Suspense fallback={<div className="w-full h-[500px] rounded-xl bg-surface-2 animate-pulse" /> }>
+        <TradingViewWidget symbol={symbol} type={type} theme={theme} height={500} interval={interval} />
+      </Suspense>
     </div>
   );
 }

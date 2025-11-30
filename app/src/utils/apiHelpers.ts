@@ -79,6 +79,28 @@ class RateLimiter {
 
 export const rateLimiter = new RateLimiter();
 
+/**
+ * Retry helper with exponential backoff and jitter
+ */
+export async function withRetry<T>(
+    fn: () => Promise<T>,
+    attempts: number = 3,
+    baseDelayMs: number = 500,
+    jitterMs: number = 200
+): Promise<T> {
+    let lastError: any;
+    for (let i = 0; i < attempts; i++) {
+        try {
+            return await fn();
+        } catch (e) {
+            lastError = e;
+            const delay = baseDelayMs * Math.pow(2, i) + Math.floor(Math.random() * jitterMs);
+            await new Promise(res => setTimeout(res, delay));
+        }
+    }
+    throw lastError;
+}
+
 // Data source interface
 export interface DataSource<T> {
     name: string;

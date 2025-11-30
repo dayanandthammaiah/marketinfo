@@ -1,4 +1,5 @@
 import { Search, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,6 +32,24 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpdated, onRefresh, isRefreshing }: MainLayoutProps) {
+    const [hiddenHeader, setHiddenHeader] = useState(false);
+    const [lastScrollTop, setLastScrollTop] = useState(0);
+
+    useEffect(() => {
+        const el = document.getElementById('app-main-scroll');
+        if (!el) return;
+        const onScroll = () => {
+            const current = el.scrollTop;
+            if (current > lastScrollTop + 5) {
+                setHiddenHeader(true);
+            } else if (current < lastScrollTop - 5) {
+                setHiddenHeader(false);
+            }
+            setLastScrollTop(current);
+        };
+        el.addEventListener('scroll', onScroll, { passive: true });
+        return () => el.removeEventListener('scroll', onScroll as any);
+    }, [lastScrollTop]);
     const mainTabs = [
         { id: 'india', label: 'India', icon: TrendingUp },
         { id: 'us', label: 'US', icon: DollarSign },
@@ -47,7 +66,7 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     return (
         <div className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans">
             {/* Top App Bar */}
-            <header className="sticky top-0 z-50 w-full glass border-b border-white/10 shadow-sm transition-all duration-300">
+            <header className={cn("sticky top-0 z-50 w-full glass border-b border-white/10 shadow-sm transition-transform duration-300", hiddenHeader ? "-translate-y-full" : "translate-y-0")}>
                 <div className="container mx-auto px-4">
                     {/* Top Row: Logo, Search, Actions */}
                     <div className="h-16 flex items-center justify-between gap-4">
@@ -56,7 +75,7 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 flex items-center justify-center shadow-lg group-hover:shadow-primary-500/30 transition-all duration-300 group-hover:scale-105">
                                 <span className="text-white font-bold text-xl tracking-tighter">II</span>
                             </div>
-                            <span className="font-bold text-xl bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 bg-clip-text text-transparent hidden sm:block tracking-tight">
+                            <span className="m3-title-large bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 bg-clip-text text-transparent hidden sm:block tracking-tight">
                                 InvestIQ
                             </span>
                         </div>
@@ -154,7 +173,7 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-24 md:pb-6">
+            <main id="app-main-scroll" className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-24 md:pb-6">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}

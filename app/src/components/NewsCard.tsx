@@ -37,7 +37,10 @@ export function NewsCard({ item }: NewsCardProps) {
                     <img
                         src={item.image}
                         alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-sm will-change-transform"
+                        onLoad={(e) => { e.currentTarget.classList.remove('blur-sm'); }}
                         onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             const parent = e.currentTarget.parentElement;

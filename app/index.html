@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#111827" />
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,6 +21,13 @@
           console.error('Theme script error:', e);
         }
       })();
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((e) => console.error('SW registration failed', e));
+        });
+      }
     </script>
   </head>
   <body>

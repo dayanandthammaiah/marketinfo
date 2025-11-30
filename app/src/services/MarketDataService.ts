@@ -6,9 +6,14 @@ import type { AppData, StockData, CryptoData, NewsItem } from '../types/index';
  * 2. Optionally enhance with live API data if available
  */
 import { TechnicalAnalysis } from '../utils/TechnicalAnalysis';
+import { fetchWithFallback, fetchWithTimeout, rateLimiter, withRetry } from '../utils/apiHelpers';
+import { fetchNewsData } from './NewsDataService';
 
 const YAHOO_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/quote';
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
+const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
+const CMC_KEY = import.meta.env.VITE_CMC_API_KEY || '';
+
 
 // List of symbols to fetch
 const NIFTY_SYMBOLS = [
@@ -32,12 +37,27 @@ export const MarketDataService = {
      * Fetch all data - Live from APIs
      */
     async fetchAllData(): Promise<AppData> {
+        // 1) Try local static snapshot first (no CORS, fastest in dev)
+        try {
+            const res = await fetch('/latest_data.json', { cache: 'no-store' });
+            if (res.ok) {
+                const json = await res.json();
+                // Expecting shape similar to AppData
+                if (json && (json.nifty_50 || json.us_stocks || json.crypto || json.news)) {
+                    return json as AppData;
+                }
+            }
+        } catch (e) {
+            console.warn('Static latest_data.json not available, falling back to live APIs');
+        }
+
+        // 2) Fallback to live APIs (may be blocked by CORS in browser)
         try {
             const [niftyData, usData, cryptoData, newsData] = await Promise.all([
                 this.fetchStocks(NIFTY_SYMBOLS),
                 this.fetchStocks(US_SYMBOLS),
                 this.fetchCrypto(),
-                this.fetchNews()
+                fetchNewsData()
             ]);
 
             return {
@@ -49,7 +69,6 @@ export const MarketDataService = {
             };
         } catch (error) {
             console.error('Error fetching all data:', error);
-            // Fallback to empty structure or cached data if available
             return {
                 nifty_50: [],
                 us_stocks: [],
@@ -141,50 +160,125 @@ export const MarketDataService = {
     },
 
     /**
-     * Fetch Crypto Data from CoinGecko
+     * Normalize crypto data from various sources to CryptoData
+     */
+    normalizeCrypto(c: any, source: 'coingecko' | 'cmc'): CryptoData {
+        if (source === 'coingecko') {
+            const rsi = 30 + Math.random() * 40;
+            const { action, score } = TechnicalAnalysis.getRecommendation(c.current_price, rsi);
+            return {
+                id: c.id,
+                symbol: (c.symbol || '').toUpperCase(),
+                name: c.name,
+                image: c.image,
+                current_price: c.current_price,
+                market_cap: c.market_cap,
+                market_cap_rank: c.market_cap_rank,
+                total_volume: c.total_volume,
+                high_24h: c.high_24h,
+                low_24h: c.low_24h,
+                price_change_24h: c.price_change_24h,
+                price_change_percentage_24h: c.price_change_percentage_24h,
+                market_cap_change_24h: c.market_cap_change_24h,
+                market_cap_change_percentage_24h: c.market_cap_change_percentage_24h,
+                circulating_supply: c.circulating_supply,
+                ath: c.ath,
+                ath_change_percentage: c.ath_change_percentage,
+                ath_date: c.ath_date,
+                atl: c.atl,
+                atl_change_percentage: c.atl_change_percentage,
+                atl_date: c.atl_date,
+                rsi: parseFloat(rsi.toFixed(2)),
+                score: score,
+                recommendation: action,
+                last_updated: c.last_updated
+            };
+        } else {
+            // CoinMarketCap mapping
+            const quote = c.quote?.USD || {};
+            const rsi = 30 + Math.random() * 40;
+            const { action, score } = TechnicalAnalysis.getRecommendation(quote.price || 0, rsi);
+            return {
+                id: (c.slug || c.symbol || '').toLowerCase(),
+                symbol: (c.symbol || '').toUpperCase(),
+                name: c.name,
+                image: '',
+                current_price: quote.price || 0,
+                market_cap: quote.market_cap || 0,
+                market_cap_rank: c.cmc_rank || 0,
+                total_volume: quote.volume_24h || 0,
+                high_24h: quote.price || 0, // CMC does not provide high_24h in basic quote
+                low_24h: quote.price || 0,
+                price_change_24h: quote.price_change_24h || quote.percent_change_24h || 0,
+                price_change_percentage_24h: quote.percent_change_24h || 0,
+                market_cap_change_24h: 0,
+                market_cap_change_percentage_24h: 0,
+                circulating_supply: c.circulating_supply || 0,
+                ath: 0,
+                ath_change_percentage: 0,
+                ath_date: '',
+                atl: 0,
+                atl_change_percentage: 0,
+                atl_date: '',
+                rsi: parseFloat(rsi.toFixed(2)),
+                score: score,
+                recommendation: action,
+                last_updated: c.last_updated || new Date().toISOString()
+            };
+        }
+    },
+
+    /**
+     * Fetch crypto via multiple sources with fallback, caching, and rate-limiting + retry
      */
     async fetchCrypto(): Promise<CryptoData[]> {
-        try {
-            const url = `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&ids=${CRYPTO_IDS.join(',')}&order=market_cap_desc&sparkline=false&price_change_percentage=24h`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('CoinGecko failed');
+        const idsCsv = CRYPTO_IDS.join(',');
+        const cacheKey = 'crypto-data';
 
-            const data = await response.json();
+        const sources: { name: string; priority: number; fetch: () => Promise<CryptoData[]> }[] = [];
 
-            return data.map((c: any) => {
-                const rsi = 30 + Math.random() * 40;
-                const { action, score } = TechnicalAnalysis.getRecommendation(c.current_price, rsi);
+        // CoinGecko primary
+        sources.push({
+            name: 'CoinGecko',
+            priority: 1,
+            fetch: async () => {
+                await rateLimiter.waitForSlot('coingecko', 45, 60000);
+                const url = `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&ids=${idsCsv}&order=market_cap_desc&sparkline=false&price_change_percentage=24h`;
+                const response = await withRetry(() => fetchWithTimeout(url), 3, 400, 250);
+                if (!response.ok) throw new Error('CoinGecko failed');
+                const data = await response.json();
+                return (data || []).map((c: any) => this.normalizeCrypto(c, 'coingecko'));
+            }
+        });
 
-                return {
-                    id: c.id,
-                    symbol: c.symbol.toUpperCase(),
-                    name: c.name,
-                    image: c.image,
-                    current_price: c.current_price,
-                    market_cap: c.market_cap,
-                    market_cap_rank: c.market_cap_rank,
-                    total_volume: c.total_volume,
-                    high_24h: c.high_24h,
-                    low_24h: c.low_24h,
-                    price_change_24h: c.price_change_24h,
-                    price_change_percentage_24h: c.price_change_percentage_24h,
-                    market_cap_change_24h: c.market_cap_change_24h,
-                    market_cap_change_percentage_24h: c.market_cap_change_percentage_24h,
-                    circulating_supply: c.circulating_supply,
-                    ath: c.ath,
-                    ath_change_percentage: c.ath_change_percentage,
-                    ath_date: c.ath_date,
-                    atl: c.atl,
-                    atl_change_percentage: c.atl_change_percentage,
-                    atl_date: c.atl_date,
-                    rsi: parseFloat(rsi.toFixed(2)),
-                    score: score,
-                    recommendation: action,
-                    last_updated: c.last_updated
-                };
+        // CoinMarketCap fallback (requires API key)
+        if (CMC_KEY) {
+            sources.push({
+                name: 'CoinMarketCap',
+                priority: 2,
+                fetch: async () => {
+                    await rateLimiter.waitForSlot('cmc', 30, 60000);
+                    // Use symbols derived from ids (rough mapping). For demo, map known ids to symbols.
+                    const symbolMap: Record<string, string> = {
+                        bitcoin: 'BTC', ethereum: 'ETH', tether: 'USDT', binancecoin: 'BNB', solana: 'SOL', ripple: 'XRP', usdc: 'USDC', cardano: 'ADA', 'avalanche-2': 'AVAX', dogecoin: 'DOGE'
+                    };
+                    const symbols = CRYPTO_IDS.map(id => symbolMap[id]).filter(Boolean).join(',');
+                    const url = `${COINMARKETCAP_BASE_URL}/cryptocurrency/quotes/latest?symbol=${symbols}`;
+                    const response = await withRetry(() => fetchWithTimeout(url, { headers: { 'X-CMC_PRO_API_KEY': CMC_KEY } }), 3, 600, 300);
+                    if (!response.ok) throw new Error(`CMC error: ${response.status}`);
+                    const json = await response.json();
+                    const data = Object.values(json.data || {}) as any[];
+                    return data.map((c: any) => this.normalizeCrypto(c, 'cmc'));
+                }
             });
-        } catch (error) {
-            console.warn('Crypto fetch failed:', error);
+        }
+
+        // Fallback to empty array if all fail (handled by fetchWithFallback throwing)
+        try {
+            const data = await fetchWithFallback<CryptoData[]>(sources, cacheKey, 300000); // 5 min cache
+            return data;
+        } catch (e) {
+            console.warn('All crypto sources failed:', e);
             return [];
         }
     },

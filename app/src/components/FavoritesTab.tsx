@@ -39,7 +39,7 @@ export function FavoritesTab({ data, onStockClick }: FavoritesTabProps) {
         <div className="space-y-8 pb-20">
             {/* Header */}
             <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700">
-                <h2 className="gradient-text text-3xl font-bold mb-2">Your Favorites</h2>
+                <h2 className="gradient-text m3-headline-small mb-2">Your Favorites</h2>
                 <p className="text-gray-600 dark:text-gray-400">
                     {totalFavorites} favorite{totalFavorites !== 1 ? 's' : ''} • Quick access to your tracked assets
                 </p>
