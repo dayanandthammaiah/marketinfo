@@ -5,68 +5,55 @@ import { Preferences } from '@capacitor/preferences';
 const THEME_KEY = 'app-theme';
 
 export function ThemeToggle() {
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    // Initialize state from localStorage directly to match index.html script
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(THEME_KEY);
+            if (saved === 'dark' || saved === 'light') return saved;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        return 'light';
+    });
+
     const [isTransitioning, setIsTransitioning] = useState(false);
 
-    // Initialize theme on mount
+    // Sync with Capacitor Preferences on mount
     useEffect(() => {
-        const initializeTheme = async () => {
+        const syncPreferences = async () => {
             try {
-                // Try Capacitor Preferences first (works on native + web)
                 const { value } = await Preferences.get({ key: THEME_KEY });
-
-                if (value) {
-                    setTheme(value as 'light' | 'dark');
-                } else {
-                    // Fall back to localStorage (web only)
-                    const savedTheme = localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null;
-                    if (savedTheme) {
-                        setTheme(savedTheme);
-                    } else {
-                        // Use system preference
-                        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                        setTheme(prefersDark ? 'dark' : 'light');
-                    }
+                if (value && (value === 'light' || value === 'dark') && value !== theme) {
+                    setTheme(value);
                 }
-            } catch (error) {
-                console.error('Failed to load theme:', error);
-                // Fallback to localStorage
-                const savedTheme = localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null;
-                setTheme(savedTheme || 'light');
+            } catch (e) {
+                console.warn('Failed to sync theme preferences:', e);
             }
         };
-
-        initializeTheme();
+        syncPreferences();
     }, []);
 
     // Apply theme to document
     useEffect(() => {
         const root = document.documentElement;
 
-        // Add transition class for smooth switching
-        root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+        // Add transition class only after mount to prevent initial flash
+        setTimeout(() => {
+            root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+        }, 100);
 
-        // Toggle dark class
         if (theme === 'dark') {
             root.classList.add('dark');
         } else {
             root.classList.remove('dark');
         }
 
-        // Save to both localStorage and Capacitor Preferences
         localStorage.setItem(THEME_KEY, theme);
-        Preferences.set({ key: THEME_KEY, value: theme }).catch(err => {
-            console.warn('Failed to save theme to Capacitor:', err);
-        });
+        Preferences.set({ key: THEME_KEY, value: theme }).catch(() => { });
     }, [theme]);
 
-    const toggleTheme = async () => {
+    const toggleTheme = () => {
         setIsTransitioning(true);
-
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-
-        // Reset transition state after animation
+        setTheme(prev => prev === 'light' ? 'dark' : 'light');
         setTimeout(() => setIsTransitioning(false), 300);
     };
 

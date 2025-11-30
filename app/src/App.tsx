@@ -14,6 +14,7 @@ import { useAlerts } from './contexts/AlertsContext';
 import { usePortfolio } from './contexts/PortfolioContext';
 import { CryptoDetail } from './components/CryptoDetail';
 import type { StockData, CryptoData } from './types/index';
+import { RefreshCw } from 'lucide-react';
 
 function App() {
   const { data, loading, error, lastUpdated, refresh, isRefreshing } = useData();
@@ -125,11 +126,21 @@ function App() {
 
         return filteredNews ? (
           <div className="space-y-6 pb-20">
-            <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700">
-              <h2 className="gradient-text text-3xl font-bold mb-2">Latest Market News</h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Top financial news from trusted sources • Real-time updates
-              </p>
+            <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="gradient-text text-3xl font-bold mb-2">Latest Market News</h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Top financial news from trusted sources • Real-time updates
+                </p>
+              </div>
+              <button
+                onClick={refresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
+                Refresh
+              </button>
             </div>
             <NewsFilters
               categories={['All', 'Technology', 'Markets', 'Cryptocurrency', 'Economy', 'Business']}

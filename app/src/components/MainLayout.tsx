@@ -1,4 +1,4 @@
-import { Search, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase } from 'lucide-react';
+import { Search, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase, Menu } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,15 +31,20 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpdated, onRefresh, isRefreshing }: MainLayoutProps) {
-    const tabs = [
+    const mainTabs = [
         { id: 'india', label: 'India', icon: TrendingUp },
         { id: 'us', label: 'US', icon: DollarSign },
         { id: 'crypto', label: 'Crypto', icon: Bitcoin },
         { id: 'news', label: 'News', icon: Newspaper },
-        { id: 'favorites', label: 'Favorites', icon: Star },
-        { id: 'alerts', label: 'Alerts', icon: Bell },
         { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     ];
+
+    const secondaryTabs = [
+        { id: 'favorites', label: 'Favorites', icon: Star },
+        { id: 'alerts', label: 'Alerts', icon: Bell },
+    ];
+
+    const allTabs = [...mainTabs, ...secondaryTabs];
 
     return (
         <div className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans">
@@ -70,32 +75,45 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                         </div>
 
                         {/* Right Actions */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                            {/* Last Updated */}
-                            {lastUpdated && (
-                                <span className="hidden lg:flex items-center gap-2 text-xs text-muted font-medium mr-2 bg-surface-2 px-3 py-1.5 rounded-full border border-white/5">
-                                    {activeTab === 'crypto' && (
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-main opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success-main"></span>
-                                        </span>
-                                    )}
-                                    Updated {formatRelativeTime(lastUpdated)}
-                                </span>
-                            )}
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            {/* Mobile Search Icon Toggle (Placeholder for now) */}
+                            <button className="md:hidden p-2 text-muted hover:text-main">
+                                <Search size={20} />
+                            </button>
 
-                            {/* Refresh Button */}
+                            {/* Secondary Tabs Icons (Mobile & Desktop) */}
+                            {secondaryTabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => onTabChange(tab.id)}
+                                    className={cn(
+                                        "p-2 rounded-xl transition-all relative",
+                                        activeTab === tab.id
+                                            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                                            : "text-muted hover:bg-surface-2 hover:text-main"
+                                    )}
+                                    title={tab.label}
+                                >
+                                    <tab.icon size={20} />
+                                    {activeTab === tab.id && (
+                                        <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
+                                    )}
+                                </button>
+                            ))}
+
+                            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block" />
+
+                            {/* Refresh Button (Desktop) */}
                             <button
                                 onClick={onRefresh}
                                 disabled={isRefreshing}
                                 className={cn(
-                                    "flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface border border-transparent hover:border-primary-500/30 text-muted hover:text-primary-600 font-medium transition-all active:scale-95",
+                                    "hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-2 hover:bg-surface border border-transparent hover:border-primary-500/30 text-muted hover:text-primary-600 font-medium transition-all active:scale-95",
                                     isRefreshing && "opacity-70 cursor-wait"
                                 )}
                                 title="Refresh data now"
                             >
                                 <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-primary-500")} />
-                                <span className="hidden lg:inline">Refresh</span>
                             </button>
 
                             {/* Theme Toggle */}
@@ -103,40 +121,20 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                         </div>
                     </div>
 
-                    {/* Mobile Search (Visible only on mobile) */}
-                    <div className="md:hidden pb-3">
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary-500 transition-colors" size={16} />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                onChange={(e) => onSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-2 border border-transparent focus:border-primary-500/50 focus:bg-surface focus:ring-4 focus:ring-primary-500/10 focus:outline-none transition-all placeholder:text-muted/70 text-sm"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Unified Scrollable Tabs */}
-                    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-0 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 border-t md:border-t-0 border-white/10 pt-2 md:pt-0">
-                        {tabs.map(tab => (
+                    {/* Desktop Navigation Tabs */}
+                    <nav className="hidden md:flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 border-t border-white/10 pt-0">
+                        {mainTabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={cn(
-                                    "relative px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 text-sm whitespace-nowrap flex-shrink-0 mb-2 md:mb-0 select-none",
+                                    "relative px-4 py-3 font-semibold transition-all duration-300 flex items-center gap-2 text-sm whitespace-nowrap border-b-2",
                                     activeTab === tab.id
-                                        ? "text-white shadow-lg shadow-primary-500/25 scale-105"
-                                        : "text-muted hover:text-main hover:bg-surface-2"
+                                        ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                                        : "border-transparent text-muted hover:text-main hover:border-gray-300 dark:hover:border-gray-700"
                                 )}
                             >
-                                {activeTab === tab.id && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute inset-0 bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 rounded-xl -z-10"
-                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                    />
-                                )}
-                                <tab.icon size={18} className={cn("transition-opacity", activeTab === tab.id ? "opacity-100" : "opacity-70")} />
+                                <tab.icon size={16} className={cn("transition-opacity", activeTab === tab.id ? "opacity-100" : "opacity-70")} />
                                 <span>{tab.label}</span>
                             </button>
                         ))}
@@ -144,8 +142,8 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                 </div>
             </header>
 
-            {/* Main Content with Page Transitions */}
-            <main className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-safe">
+            {/* Main Content */}
+            <main className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-24 md:pb-6">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -160,10 +158,32 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                 </AnimatePresence>
             </main>
 
-            {/* Footer */}
-            <footer className="border-t border-white/10 py-6 text-center text-xs text-muted bg-surface/50 backdrop-blur-sm">
-                <p>© 2025 InvestIQ • Powered by open-source APIs</p>
-            </footer>
+            {/* Mobile Bottom Navigation */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 pb-safe z-50">
+                <div className="flex justify-around items-center px-2 py-2">
+                    {mainTabs.map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => onTabChange(tab.id)}
+                                className={cn(
+                                    "flex flex-col items-center justify-center w-full py-1 gap-1 transition-all duration-300",
+                                    isActive ? "text-primary-600 dark:text-primary-400" : "text-muted hover:text-main"
+                                )}
+                            >
+                                <div className={cn(
+                                    "p-1.5 rounded-xl transition-all",
+                                    isActive ? "bg-primary-50 dark:bg-primary-900/20" : "bg-transparent"
+                                )}>
+                                    <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                                </div>
+                                <span className="text-[10px] font-medium">{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }
