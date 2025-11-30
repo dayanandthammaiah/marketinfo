@@ -1,4 +1,4 @@
-import { Search, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase, Menu } from 'lucide-react';
+import { Search, RefreshCw, TrendingUp, DollarSign, Bitcoin, Newspaper, Star, Bell, Briefcase } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,8 +43,6 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
         { id: 'favorites', label: 'Favorites', icon: Star },
         { id: 'alerts', label: 'Alerts', icon: Bell },
     ];
-
-    const allTabs = [...mainTabs, ...secondaryTabs];
 
     return (
         <div className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans">
@@ -102,6 +100,19 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                             ))}
 
                             <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block" />
+
+                            {/* Last Updated (Desktop) */}
+                            {lastUpdated && (
+                                <span className="hidden lg:flex items-center gap-2 text-xs text-muted font-medium mr-2 bg-surface-2 px-3 py-1.5 rounded-full border border-white/5">
+                                    {activeTab === 'crypto' && (
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-main opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success-main"></span>
+                                        </span>
+                                    )}
+                                    Updated {formatRelativeTime(lastUpdated)}
+                                </span>
+                            )}
 
                             {/* Refresh Button (Desktop) */}
                             <button
