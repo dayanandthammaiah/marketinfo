@@ -13,12 +13,12 @@ import { FavoritesTab } from './components/FavoritesTab';
 import { AlertsList } from './components/AlertsList';
 import { PortfolioTab } from './components/PortfolioTab';
 import { NewsFilters } from './components/NewsFilters';
-import { useAlerts } from './contexts/AlertsContext';
-import { usePortfolio } from './contexts/PortfolioContext';
+import { AlertsProvider, useAlerts } from './contexts/AlertsContext';
+import { PortfolioProvider, usePortfolio } from './contexts/PortfolioContext';
 import type { StockData, CryptoData } from './types/index';
 import { RefreshCw } from 'lucide-react';
 
-function App() {
+function AppContent() {
   const { data, loading, error, lastUpdated, refresh, isRefreshing } = useData();
   const { checkAlerts } = useAlerts();
   const { updatePrices } = usePortfolio();
@@ -165,7 +165,7 @@ function App() {
                       <div className="text-6xl mb-4">📰</div>
                       <h3 className="text-2xl font-bold mb-2 text-gray-700 dark:text-gray-300">No News Found</h3>
                       <p className="text-gray-500 dark:text-gray-400 mb-6">
-                        {newsSearch || newsCategory !== 'All' 
+                        {newsSearch || newsCategory !== 'All'
                           ? "Try adjusting your filters or search query"
                           : "News data is loading or unavailable"}
                       </p>
@@ -233,4 +233,12 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AlertsProvider>
+      <PortfolioProvider>
+        <AppContent />
+      </PortfolioProvider>
+    </AlertsProvider>
+  );
+}
