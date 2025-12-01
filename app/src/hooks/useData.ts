@@ -77,8 +77,18 @@ export const useData = () => {
     }, []);
 
     const refresh = useCallback(async () => {
+        const now = Date.now();
+        const lastRefresh = parseInt(localStorage.getItem('last_refresh_timestamp') || '0');
+
+        // 60 seconds cooldown
+        if (now - lastRefresh < 60000) {
+            console.log('Refresh cooldown active');
+            return;
+        }
+
         setIsRefreshing(true);
         setError(null);
+        localStorage.setItem('last_refresh_timestamp', now.toString());
         await fetchData(true); // Skip cache
     }, [fetchData]);
 

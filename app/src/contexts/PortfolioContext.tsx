@@ -60,12 +60,14 @@ function calculatePortfolio(positions: Position[]): Portfolio {
 export function PortfolioProvider({ children }: { children: ReactNode }) {
     const [positions, setPositions] = useState<Position[]>([]);
     const [portfolio, setPortfolio] = useState<Portfolio>(calculatePortfolio([]));
+    const positionsRef = useRef(positions);
 
     useEffect(() => {
         loadPortfolio();
     }, []);
 
     useEffect(() => {
+        positionsRef.current = positions;
         setPortfolio(calculatePortfolio(positions));
     }, [positions]);
 
@@ -81,7 +83,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const savePositions = async (newPositions: Position[]) => {
+    const savePositions = useCallback(async (newPositions: Position[]) => {
         try {
             await Preferences.set({
                 key: PORTFOLIO_KEY,
@@ -91,9 +93,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Failed to save portfolio:', error);
         }
-    };
+    }, []);
 
-    const addPosition = async (positionData: Omit<Position, 'id' | 'currentPrice' | 'profitLoss' | 'profitLossPercent'>) => {
+    const addPosition = useCallback(async (positionData: Omit<Position, 'id' | 'currentPrice' | 'profitLoss' | 'profitLossPercent'>) => {
         const newPosition: Position = {
             ...positionData,
             id: `pos_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -102,17 +104,18 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             profitLossPercent: 0
         };
 
-        const newPositions = [...positions, newPosition];
+        const newPositions = [...positionsRef.current, newPosition];
         await savePositions(newPositions);
-    };
+    }, [savePositions]);
 
-    const removePosition = async (id: string) => {
-        const newPositions = positions.filter(p => p.id !== id);
+    const removePosition = useCallback(async (id: string) => {
+        const newPositions = positionsRef.current.filter(p => p.id !== id);
         await savePositions(newPositions);
-    };
+    }, [savePositions]);
 
-    const updatePrices = async (prices: { symbol: string; price: number }[]) => {
-        const updatedPositions = positions.map(pos => {
+    const updatePrices = useCallback(async (prices: { symbol: string; price: number }[]) => {
+        const currentPositions = positionsRef.current;
+        const updatedPositions = currentPositions.map(pos => {
             const priceData = prices.find(p => p.symbol === pos.symbol);
             if (!priceData) return pos;
 
@@ -130,12 +133,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             };
         });
 
-        await savePositions(updatedPositions);
-    };
+        // Only save if there are actual changes to avoid unnecessary writes/renders
+        // For simplicity, we'll assume price updates always warrant a save if we have positions
+        if (updatedPositions.length > 0) {
+            await savePositions(updatedPositions);
+        }
+    }, [savePositions]);
 
-    const clearAll = async () => {
+    const clearAll = useCallback(async () => {
         await savePositions([]);
-    };
+    }, [savePositions]);
 
     return (
         <PortfolioContext.Provider value={{ portfolio, addPosition, removePosition, updatePrices, clearAll }}>

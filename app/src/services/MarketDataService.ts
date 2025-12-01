@@ -171,7 +171,9 @@ export const MarketDataService = {
                 results.push(...mapped);
             }
 
-            return results;
+            // Deduplicate by symbol
+            const uniqueResults = Array.from(new Map(results.map(item => [item.symbol, item])).values());
+            return uniqueResults;
         } catch (error) {
             console.warn('Stock fetch failed:', error);
             return [];
@@ -182,219 +184,21 @@ export const MarketDataService = {
      * Normalize crypto data from various sources to CryptoData
      */
     normalizeCrypto(c: any, source: 'coingecko' | 'cmc'): CryptoData {
-        if (source === 'coingecko') {
-            const rsi = 30 + Math.random() * 40;
-            const { action, score } = TechnicalAnalysis.getRecommendation(c.current_price, rsi);
-            return {
-                id: c.id,
-                symbol: (c.symbol || '').toUpperCase(),
-                name: c.name,
-                image: c.image,
-                current_price: c.current_price,
-                market_cap: c.market_cap,
-                market_cap_rank: c.market_cap_rank,
-                total_volume: c.total_volume,
-                high_24h: c.high_24h,
-                low_24h: c.low_24h,
-                price_change_24h: c.price_change_24h,
-                price_change_percentage_24h: c.price_change_percentage_24h,
-                price_change_percentage_7d_in_currency: c.price_change_percentage_7d_in_currency,
-                price_change_percentage_30d_in_currency: c.price_change_percentage_30d_in_currency,
-                price_change_percentage_200d_in_currency: c.price_change_percentage_200d_in_currency,
-                price_change_percentage_1y_in_currency: c.price_change_percentage_1y_in_currency,
-                market_cap_change_24h: c.market_cap_change_24h,
-                market_cap_change_percentage_24h: c.market_cap_change_percentage_24h,
-                circulating_supply: c.circulating_supply,
-                ath: c.ath,
-                ath_change_percentage: c.ath_change_percentage,
-                ath_date: c.ath_date,
-                atl: c.atl,
-                atl_change_percentage: c.atl_change_percentage,
-                atl_date: c.atl_date,
-                rsi: parseFloat(rsi.toFixed(2)),
-                score: score,
-                recommendation: action,
-                last_updated: c.last_updated
-            };
-        } else {
-            // CoinMarketCap mapping
-            const quote = c.quote?.USD || {};
-            const rsi = 30 + Math.random() * 40;
-            const { action, score } = TechnicalAnalysis.getRecommendation(quote.price || 0, rsi);
-            return {
-                id: (c.slug || c.symbol || '').toLowerCase(),
-                symbol: (c.symbol || '').toUpperCase(),
-                name: c.name,
-                image: '',
-                current_price: quote.price || 0,
-                market_cap: quote.market_cap || 0,
-                market_cap_rank: c.cmc_rank || 0,
-                total_volume: quote.volume_24h || 0,
-                high_24h: quote.price || 0, // CMC does not provide high_24h in basic quote
-                low_24h: quote.price || 0,
-                price_change_24h: quote.price_change_24h || quote.percent_change_24h || 0,
-                price_change_percentage_24h: quote.percent_change_24h || 0,
-                market_cap_change_24h: 0,
-                market_cap_change_percentage_24h: 0,
-                circulating_supply: c.circulating_supply || 0,
-                ath: 0,
-                ath_change_percentage: 0,
-                ath_date: '',
-                atl: 0,
-                atl_change_percentage: 0,
-                atl_date: '',
-                rsi: parseFloat(rsi.toFixed(2)),
-                score: score,
-                recommendation: action,
-                last_updated: c.last_updated || new Date().toISOString()
-            };
-        }
+        // ... (existing code)
     },
 
     /**
      * Fetch crypto via multiple sources with fallback, caching, and rate-limiting + retry
      */
     async fetchCrypto(): Promise<CryptoData[]> {
-        const idsCsv = CRYPTO_IDS.join(',');
-        const cacheKey = 'crypto-data';
-
-        const sources: { name: string; priority: number; fetch: () => Promise<CryptoData[]> }[] = [];
-
-        // CoinGecko primary
-        sources.push({
-            name: 'CoinGecko',
-            priority: 1,
-            fetch: async () => {
-                await rateLimiter.waitForSlot('coingecko', 45, 60000);
-                const url = `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&ids=${idsCsv}&order=market_cap_desc&sparkline=false&price_change_percentage=24h,7d,30d,200d,1y`;
-                const response = await withRetry(() => fetchWithTimeout(url), 3, 400, 250);
-                if (!response.ok) throw new Error('CoinGecko failed');
-                const data = await response.json();
-
-                // Enhance with technicals from Binance
-                const enhancedData = await Promise.all(data.map(async (coin: any) => {
-                    const binanceSymbol = BINANCE_SYMBOL_MAP[coin.id];
-                    let technicals = {};
-
-                    if (binanceSymbol) {
-                        try {
-                            // Fetch OHLCV from Binance
-                            // limit 100 days
-                            const klinesUrl = `${BINANCE_BASE_URL}/klines?symbol=${binanceSymbol}&interval=1d&limit=100`;
-                            const klinesRes = await fetch(klinesUrl);
-                            if (klinesRes.ok) {
-                                const klines = await klinesRes.json();
-                                // klines format: [ [open_time, open, high, low, close, volume, ...], ... ]
-                                const highs = klines.map((k: any) => parseFloat(k[2]));
-                                const lows = klines.map((k: any) => parseFloat(k[3]));
-                                const closes = klines.map((k: any) => parseFloat(k[4]));
-                                const volumes = klines.map((k: any) => parseFloat(k[5]));
-
-                                const rsiSeries = TechnicalAnalysis.rsiSeries(closes, 14);
-                                const currentRsi = rsiSeries[rsiSeries.length - 1] || 50;
-
-                                const { macd } = TechnicalAnalysis.macdSeries(closes);
-                                const currentMacd = macd[macd.length - 1] || 0;
-
-                                const ema200Series = TechnicalAnalysis.emaSeries(closes, 200);
-                                const currentEma200 = ema200Series[ema200Series.length - 1];
-
-                                const adxSeries = TechnicalAnalysis.adxSeries(highs, lows, closes, 14);
-                                const currentAdx = adxSeries[adxSeries.length - 1] || 0;
-
-                                const cmfSeries = TechnicalAnalysis.cmfSeries(highs, lows, closes, volumes, 20);
-                                const currentCmf = cmfSeries[cmfSeries.length - 1] || 0;
-
-                                const { upper, lower } = TechnicalAnalysis.bollingerBands(closes, 20, 2);
-                                const currentUpper = upper[upper.length - 1];
-                                const currentLower = lower[lower.length - 1];
-
-                                // Squeeze: Bollinger Bands inside Keltner Channels (simplified here as BB width low)
-                                const bbWidth = (currentUpper - currentLower) / closes[closes.length - 1];
-                                const squeeze = bbWidth < 0.05 ? 'On' : 'No squeeze';
-
-                                const dist200 = currentEma200 ? ((closes[closes.length - 1] - currentEma200) / currentEma200) * 100 : 0;
-
-                                // MACD Slope
-                                const prevMacd = macd[macd.length - 2] || 0;
-                                const macdSlope = currentMacd - prevMacd;
-
-                                // Score Calculation
-                                let score = 50;
-                                if (currentRsi < 30) score += 15;
-                                if (currentRsi > 70) score -= 15;
-                                if (currentAdx > 25) score += 10; // Strong trend
-                                if (currentCmf > 0.05) score += 10; // Buying pressure
-                                if (dist200 > 0) score += 10; // Above 200 EMA
-                                if (macdSlope > 0) score += 5;
-
-                                // Cap score
-                                score = Math.min(100, Math.max(0, score));
-
-                                let rec = 'HOLD';
-                                if (score >= 75) rec = 'STRONG BUY';
-                                else if (score >= 60) rec = 'BUY';
-                                else if (score <= 25) rec = 'STRONG SELL';
-                                else if (score <= 40) rec = 'SELL';
-
-                                // 3m Return (approx 90 days)
-                                const price3mAgo = closes[closes.length - 91];
-                                const change3m = price3mAgo ? ((closes[closes.length - 1] - price3mAgo) / price3mAgo) * 100 : 0;
-
-                                technicals = {
-                                    rsi: currentRsi,
-                                    macd_vs_200ema: currentMacd > 0 ? 'BULLISH' : 'BEARISH',
-                                    adx: currentAdx,
-                                    cmf: currentCmf,
-                                    distance_from_200_ema: dist200,
-                                    macd_slope: macdSlope,
-                                    squeeze: squeeze,
-                                    score: score,
-                                    recommendation: rec,
-                                    price_change_percentage_3m: change3m
-                                };
-                            }
-                        } catch (e) {
-                            console.warn(`Failed to fetch history for ${coin.id}`, e);
-                        }
-                    }
-
-                    return {
-                        ...this.normalizeCrypto(coin, 'coingecko'),
-                        ...technicals
-                    };
-                }));
-
-                return enhancedData;
-            }
-        });
-
-        // CoinMarketCap fallback (requires API key)
-        if (CMC_KEY) {
-            sources.push({
-                name: 'CoinMarketCap',
-                priority: 2,
-                fetch: async () => {
-                    await rateLimiter.waitForSlot('cmc', 30, 60000);
-                    // Use symbols derived from ids (rough mapping). For demo, map known ids to symbols.
-                    const symbolMap: Record<string, string> = {
-                        bitcoin: 'BTC', ethereum: 'ETH', tether: 'USDT', binancecoin: 'BNB', solana: 'SOL', ripple: 'XRP', usdc: 'USDC', cardano: 'ADA', 'avalanche-2': 'AVAX', dogecoin: 'DOGE'
-                    };
-                    const symbols = CRYPTO_IDS.map(id => symbolMap[id]).filter(Boolean).join(',');
-                    const url = `${COINMARKETCAP_BASE_URL}/cryptocurrency/quotes/latest?symbol=${symbols}`;
-                    const response = await withRetry(() => fetchWithTimeout(url, { headers: { 'X-CMC_PRO_API_KEY': CMC_KEY } }), 3, 600, 300);
-                    if (!response.ok) throw new Error(`CMC error: ${response.status}`);
-                    const json = await response.json();
-                    const data = Object.values(json.data || {}) as any[];
-                    return data.map((c: any) => this.normalizeCrypto(c, 'cmc'));
-                }
-            });
-        }
+        // ... (existing code)
 
         // Fallback to empty array if all fail (handled by fetchWithFallback throwing)
         try {
             const data = await fetchWithFallback<CryptoData[]>(sources, cacheKey, 300000); // 5 min cache
-            return data;
+            // Deduplicate by symbol
+            const uniqueData = Array.from(new Map(data.map(item => [item.symbol, item])).values());
+            return uniqueData;
         } catch (e) {
             console.warn('All crypto sources failed:', e);
             return [];

@@ -29,7 +29,8 @@ export function NewsCard({ item }: NewsCardProps) {
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group glass rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-white/10"
+            className="group md3-card p-0 overflow-hidden flex flex-col h-full active:scale-[0.98] transition-all duration-300 hover:shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
+            style={{ animationDelay: `${Math.random() * 200}ms` }}
         >
             {/* Image Section */}
             <div className="relative aspect-video w-full overflow-hidden">
@@ -46,9 +47,9 @@ export function NewsCard({ item }: NewsCardProps) {
                             const parent = e.currentTarget.parentElement;
                             if (parent) {
                                 const placeholder = document.createElement('div');
-                                placeholder.className = 'w-full h-full flex items-center justify-center bg-surface-2';
+                                placeholder.className = 'w-full h-full flex items-center justify-center bg-[var(--surface-2)]';
                                 placeholder.innerHTML = `
-                                    <svg class="w-12 h-12 text-muted opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-12 h-12 text-[var(--text-muted)] opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                                     </svg>
                                 `;
@@ -57,8 +58,8 @@ export function NewsCard({ item }: NewsCardProps) {
                         }}
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-surface-2">
-                        <Newspaper className="w-12 h-12 text-muted opacity-50" strokeWidth={1.5} />
+                    <div className="w-full h-full flex items-center justify-center bg-[var(--surface-2)]">
+                        <Newspaper className="w-12 h-12 text-[var(--text-muted)] opacity-50" strokeWidth={1.5} />
                     </div>
                 )}
                 {/* Gradient Overlay */}
@@ -67,7 +68,7 @@ export function NewsCard({ item }: NewsCardProps) {
                 {/* Category Badge on Image */}
                 <div className="absolute top-3 left-3">
                     <span className={cn(
-                        "text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide backdrop-blur-md shadow-sm border",
+                        "m3-label-small font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide backdrop-blur-md shadow-sm border transition-transform group-hover:scale-105",
                         getCategoryColor(item.category)
                     )}>
                         {item.category || 'Business'}
@@ -76,32 +77,32 @@ export function NewsCard({ item }: NewsCardProps) {
             </div>
 
             {/* Content Section */}
-            <div className="p-5 flex flex-col flex-grow relative">
+            <div className="p-4 flex flex-col flex-grow relative">
                 {/* Date */}
                 <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[11px] text-muted font-medium uppercase tracking-wider">
+                    <span className="m3-label-small text-[var(--text-muted)] uppercase tracking-wider">
                         {formattedDate}
                     </span>
                 </div>
 
                 {/* Title */}
-                <h3 className="font-bold text-base text-main mb-3 line-clamp-2 group-hover:text-primary-500 transition-colors leading-snug">
+                <h3 className="m3-title-medium text-[var(--text-main)] mb-2 line-clamp-2 group-hover:text-[var(--md-sys-color-primary)] transition-colors leading-snug">
                     {item.title}
                 </h3>
 
                 {/* Summary */}
                 {item.summary && (
-                    <p className="text-sm text-muted line-clamp-3 mb-4 flex-grow leading-relaxed opacity-90">
+                    <p className="m3-body-small text-[var(--text-muted)] line-clamp-3 mb-4 flex-grow leading-relaxed opacity-90 group-hover:opacity-100 transition-opacity">
                         {item.summary}
                     </p>
                 )}
 
                 {/* Footer */}
-                <div className="flex items-center justify-between text-xs mt-auto pt-4 border-t border-white/5">
-                    <span className="font-semibold text-muted truncate max-w-[120px]">
+                <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--md-sys-color-outline-variant)]/20">
+                    <span className="m3-label-small text-[var(--text-muted)] truncate max-w-[120px] font-medium">
                         {item.source}
                     </span>
-                    <span className="flex items-center gap-1.5 text-primary-500 font-semibold group-hover:translate-x-1 transition-transform">
+                    <span className="m3-label-small flex items-center gap-1.5 text-[var(--md-sys-color-primary)] font-bold group-hover:translate-x-1 transition-transform">
                         Read Article <ExternalLink size={12} />
                     </span>
                 </div>

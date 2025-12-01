@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
@@ -86,7 +86,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
         await saveAlerts(newAlerts);
     };
 
-    const checkAlerts = async (prices: { symbol: string; price: number }[]) => {
+    const checkAlerts = useCallback(async (prices: { symbol: string; price: number }[]) => {
         const updatedAlerts = [...alerts];
         let hasChanges = false;
 
@@ -128,7 +128,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
         if (hasChanges) {
             await saveAlerts(updatedAlerts);
         }
-    };
+    }, [alerts]);
 
     const clearAll = async () => {
         await saveAlerts([]);

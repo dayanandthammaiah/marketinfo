@@ -15,9 +15,10 @@ interface ResponsiveTableProps<T> {
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
     renderExpandedRow?: (item: T) => React.ReactNode;
+    renderMobileCard?: (item: T) => React.ReactNode;
 }
 
-export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRow }: ResponsiveTableProps<T>) {
+export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRow, renderMobileCard }: ResponsiveTableProps<T>) {
     const [sortKey, setSortKey] = useState<keyof T | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -52,25 +53,25 @@ export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRo
     return (
         <>
             {/* Desktop Table View - Full Horizontal & Vertical Scroll Support */}
-            <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+            <div className="hidden md:block w-full overflow-hidden rounded-2xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--surface-1)] shadow-sm">
                 {/* Scroll wrapper with both horizontal and vertical scrolling */}
-                <div className="overflow-auto max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500 dark:hover:scrollbar-thumb-gray-500">
+                <div className="overflow-auto max-h-[70vh] scrollbar-thin">
                     <table className="w-full border-collapse text-sm text-left min-w-[1200px]">
-                        <thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-800/80 dark:to-gray-800 text-gray-700 dark:text-gray-300 font-bold sticky top-0 z-20 shadow-lg border-b-2 border-primary-500/20">
-                            <tr className="divide-x divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-[var(--surface-2)] text-[var(--text-muted)] font-bold sticky top-0 z-20 shadow-sm">
+                            <tr className="divide-x divide-[var(--md-sys-color-outline-variant)]/10">
                                 {columns.map((col, i) => (
                                     <th
                                         key={i}
                                         onClick={() => handleSort(col.accessorKey)}
                                         className={cn(
-                                            "px-6 py-4 whitespace-nowrap cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors select-none",
-                                            i === 0 && "sticky left-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
+                                            "px-6 py-4 whitespace-nowrap cursor-pointer hover:text-[var(--md-sys-color-primary)] transition-colors select-none m3-label-large",
+                                            i === 0 && "sticky left-0 z-20 bg-[var(--surface-2)] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]"
                                         )}
                                     >
                                         <div className="flex items-center gap-1.5">
                                             {col.header}
                                             {sortKey === col.accessorKey ? (
-                                                <span className="text-primary-600 dark:text-primary-400">
+                                                <span className="text-[var(--md-sys-color-primary)]">
                                                     {sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
                                                 </span>
                                             ) : (
@@ -81,17 +82,15 @@ export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRo
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/10">
                             {sortedData.map((item, rowIdx) => (
                                 <React.Fragment key={rowIdx}>
                                     <tr
                                         onClick={() => onRowClick?.(item)}
                                         className={cn(
-                                            "group transition-all duration-300",
-                                            "hover:bg-gradient-to-r hover:from-primary-50/40 hover:via-secondary-50/30 hover:to-primary-50/40",
-                                            "dark:hover:from-primary-900/20 dark:hover:via-secondary-900/15 dark:hover:to-primary-900/20",
-                                            "hover:shadow-md hover:scale-[1.002]",
-                                            rowIdx % 2 === 0 ? "bg-white dark:bg-gray-900/50" : "bg-gray-50/50 dark:bg-gray-800/30",
+                                            "group transition-all duration-200",
+                                            "hover:bg-[var(--surface-2)]",
+                                            rowIdx % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-1)]/50",
                                             onRowClick && "cursor-pointer"
                                         )}
                                     >
@@ -99,9 +98,9 @@ export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRo
                                             <td
                                                 key={colIdx}
                                                 className={cn(
-                                                    "px-6 py-4 whitespace-nowrap",
+                                                    "px-6 py-4 whitespace-nowrap m3-body-medium",
                                                     col.className,
-                                                    colIdx === 0 && "sticky left-0 z-10 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] font-medium text-gray-900 dark:text-white"
+                                                    colIdx === 0 && "sticky left-0 z-10 bg-[var(--surface-1)] group-hover:bg-[var(--surface-2)] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] font-medium text-[var(--text-main)]"
                                                 )}
                                             >
                                                 {renderCellValue(col, item)}
@@ -116,49 +115,54 @@ export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRo
                 </div>
             </div>
 
-            {/* Mobile Card View (Groww Style) - Full width with scroll */}
-            <div className="md:hidden space-y-3 w-full">
+            {/* Mobile Card View (Material 3) */}
+            <div className="md:hidden space-y-3 w-full pb-20">
                 {sortedData.map((item, idx) => (
-                    <div
-                        key={idx}
-                        onClick={() => onRowClick?.(item)}
-                        className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm active:scale-[0.99] transition-transform"
-                    >
-                        {/* Header Row: Name & Price */}
-                        <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                                {renderCellValue(columns[0], item)}
-                            </div>
-                            <div className="text-right">
-                                {renderCellValue(columns[1], item)}
-                            </div>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="h-px bg-gray-100 dark:bg-gray-800 my-3" />
-
-                        {/* Metrics Grid */}
-                        <div className="grid grid-cols-3 gap-y-3 gap-x-2">
-                            {columns.slice(2).map((col, colIdx) => (
-                                <div key={colIdx} className="flex flex-col">
-                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">
-                                        {col.mobileLabel || col.header}
-                                    </span>
-                                    <span className={cn("text-sm font-medium", col.className)}>
-                                        {renderCellValue(col, item)}
-                                    </span>
+                    <React.Fragment key={idx}>
+                        {renderMobileCard ? (
+                            renderMobileCard(item)
+                        ) : (
+                            <div
+                                onClick={() => onRowClick?.(item)}
+                                className="md3-card active:scale-[0.98] transition-transform"
+                            >
+                                {/* Header Row: Name & Price */}
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex-1">
+                                        {renderCellValue(columns[0], item)}
+                                    </div>
+                                    <div className="text-right">
+                                        {renderCellValue(columns[1], item)}
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
 
-                        {onRowClick && (
-                            <div className="mt-3 flex justify-end">
-                                <span className="text-xs font-medium text-primary-600 dark:text-primary-400 flex items-center gap-1">
-                                    View Details <ChevronRight size={14} />
-                                </span>
+                                {/* Divider */}
+                                <div className="h-px bg-[var(--md-sys-color-outline-variant)]/20 my-3" />
+
+                                {/* Metrics Grid */}
+                                <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                                    {columns.slice(2).map((col, colIdx) => (
+                                        <div key={colIdx} className="flex flex-col">
+                                            <span className="m3-label-small text-[var(--text-muted)] uppercase tracking-wide mb-0.5">
+                                                {col.mobileLabel || col.header}
+                                            </span>
+                                            <span className={cn("m3-body-medium font-medium", col.className)}>
+                                                {renderCellValue(col, item)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {onRowClick && (
+                                    <div className="mt-4 flex justify-end">
+                                        <span className="m3-label-large text-[var(--md-sys-color-primary)] flex items-center gap-1">
+                                            View Details <ChevronRight size={16} />
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         )}
-                    </div>
+                    </React.Fragment>
                 ))}
             </div>
         </>

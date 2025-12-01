@@ -327,6 +327,118 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
         );
     };
 
+    const renderTechnicalMobileCard = (coin: CryptoData) => {
+        const rsi = coin.rsi || 50;
+        const rsiColor = rsi > 70 ? 'text-danger-main' : rsi < 30 ? 'text-success-main' : 'text-warning-main';
+        const macdSignal = coin.macd_vs_200ema === 'BULLISH' ? 'Bullish' : 'Bearish';
+        const macdColor = macdSignal === 'Bullish' ? 'text-success-main' : 'text-danger-main';
+
+        return (
+            <div
+                onClick={() => onRowClick?.(coin)}
+                className="md3-card active:scale-[0.98] transition-transform"
+            >
+                <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                        {coin.image && <img src={coin.image} alt={coin.name} className="w-10 h-10 rounded-full" />}
+                        <div>
+                            <h4 className="m3-title-medium text-[var(--text-main)]">{coin.symbol}</h4>
+                            <span className="m3-body-small text-[var(--text-muted)]">{coin.name}</span>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <div className="m3-title-medium font-mono text-[var(--text-main)]">
+                            ${coin.current_price.toLocaleString()}
+                        </div>
+                        <div className="m3-label-small">
+                            {formatPercent(coin.price_change_percentage_24h)}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="h-px bg-[var(--md-sys-color-outline-variant)]/20 my-3" />
+
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col items-center p-2 bg-[var(--surface-2)] rounded-lg">
+                        <span className="text-[10px] uppercase text-[var(--text-muted)]">RSI (14)</span>
+                        <span className={`font-bold ${rsiColor}`}>{rsi.toFixed(1)}</span>
+                    </div>
+                    <div className="flex flex-col items-center p-2 bg-[var(--surface-2)] rounded-lg">
+                        <span className="text-[10px] uppercase text-[var(--text-muted)]">MACD</span>
+                        <span className={`font-bold ${macdColor}`}>{macdSignal}</span>
+                    </div>
+                    <div className="flex flex-col items-center p-2 bg-[var(--surface-2)] rounded-lg">
+                        <span className="text-[10px] uppercase text-[var(--text-muted)]">200 EMA</span>
+                        <span className={`font-bold ${coin.distance_from_200_ema && coin.distance_from_200_ema > 0 ? 'text-success-main' : 'text-danger-main'}`}>
+                            {coin.distance_from_200_ema ? `${coin.distance_from_200_ema > 0 ? '+' : ''}${coin.distance_from_200_ema.toFixed(1)}%` : '-'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderInstitutionalMobileCard = (coin: CryptoData) => {
+        const score = coin.score || 50;
+        const colors = getScoreColor(score);
+        const adx = coin.adx || 0;
+        const cmf = coin.cmf || 0;
+
+        return (
+            <div
+                onClick={() => onRowClick?.(coin)}
+                className="md3-card active:scale-[0.98] transition-transform"
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                        <span className="m3-title-medium font-bold text-[var(--text-main)]">{coin.symbol}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${colors.badge}`}>
+                            Score: {score.toFixed(0)}
+                        </span>
+                    </div>
+                    <button
+                        onClick={(e) => toggleRow(coin.id, e)}
+                        className="p-2 bg-[var(--surface-2)] rounded-full text-[var(--md-sys-color-primary)]"
+                    >
+                        {expandedRows[coin.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                </div>
+
+                {/* Score Bar */}
+                <div className="w-full bg-[var(--surface-2)] rounded-full h-2 mb-4 overflow-hidden">
+                    <div className={`h-full ${colors.text.replace('text-', 'bg-')}`} style={{ width: `${score}%` }}></div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase text-[var(--text-muted)]">ADX Strength</span>
+                        <span className={`font-bold ${adx > 25 ? 'text-success-main' : 'text-[var(--text-muted)]'}`}>
+                            {adx.toFixed(1)}
+                        </span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase text-[var(--text-muted)]">Money Flow</span>
+                        <span className={`font-bold ${cmf > 0 ? 'text-success-main' : 'text-danger-main'}`}>
+                            {cmf.toFixed(2)}
+                        </span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase text-[var(--text-muted)]">Squeeze</span>
+                        <span className={`font-bold ${coin.squeeze === 'On' ? 'text-warning-main' : 'text-[var(--text-muted)]'}`}>
+                            {coin.squeeze || 'Off'}
+                        </span>
+                    </div>
+                </div>
+
+                {expandedRows[coin.id] && (
+                    <div className="mt-4 pt-4 border-t border-[var(--md-sys-color-outline-variant)]/20 animate-fade-in">
+                        {renderExpandedRow(coin)}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-8">
             {/* Technical Indicators Summary */}
@@ -344,7 +456,12 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
                         </div>
                     </div>
                 </div>
-                <ResponsiveTable data={data} columns={technicalColumns} onRowClick={onRowClick} />
+                <ResponsiveTable
+                    data={data}
+                    columns={technicalColumns}
+                    onRowClick={onRowClick}
+                    renderMobileCard={renderTechnicalMobileCard}
+                />
             </div>
 
             {/* Institutional-Grade Analysis */}
@@ -367,6 +484,7 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
                     columns={institutionalColumns}
                     onRowClick={onRowClick}
                     renderExpandedRow={renderExpandedRow}
+                    renderMobileCard={renderInstitutionalMobileCard}
                 />
             </div>
         </div>

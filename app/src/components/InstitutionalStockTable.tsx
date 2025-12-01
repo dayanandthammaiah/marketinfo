@@ -203,6 +203,66 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
         },
     ];
 
+    const renderMobileCard = (stock: StockData) => {
+        const recColors = getRecommendationColor(stock.recommendation || 'Hold');
+        const scoreColors = getScoreColor(stock.score || 0);
+
+        return (
+            <div
+                onClick={() => onRowClick?.(stock)}
+                className="md3-card active:scale-[0.98] transition-transform relative overflow-hidden"
+            >
+                {/* Rank Badge */}
+                <div className="absolute top-0 right-0 bg-[var(--surface-5)] px-3 py-1 rounded-bl-xl border-b border-l border-[var(--md-sys-color-outline-variant)]/20 shadow-sm">
+                    <span className="text-xs font-bold text-[var(--md-sys-color-primary)]">
+                        #{stock.rank}
+                    </span>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                    {/* Header */}
+                    <div className="flex items-start gap-3 pr-12">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${scoreColors.bg} ${scoreColors.text}`}>
+                            {stock.score?.toFixed(0)}
+                        </div>
+                        <div>
+                            <h4 className="m3-title-medium text-[var(--text-main)]">{stock.name}</h4>
+                            <span className="m3-label-small text-[var(--text-muted)] font-mono">{stock.symbol}</span>
+                        </div>
+                    </div>
+
+                    {/* Key Metrics Grid */}
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--surface-2)]/50 rounded-xl border border-[var(--md-sys-color-outline-variant)]/10">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">Recommendation</span>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-md w-fit ${recColors.badge}`}>
+                                {stock.recommendation || 'HOLD'}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">ROCE</span>
+                            <span className="text-sm font-semibold text-[var(--text-main)]">
+                                {getEmojiIndicator(stock.roce || 0, 15, 10)} {(stock.roce || 0).toFixed(0)}%
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">EPS Growth</span>
+                            <span className="text-sm font-semibold text-[var(--text-main)]">
+                                {getEmojiIndicator(stock.eps_growth || 0, 15, 10)} {(stock.eps_growth || 0).toFixed(0)}%
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">Quality</span>
+                            <span className="text-sm font-semibold text-[var(--text-main)]">
+                                {stock.earnings_quality === 'High' ? '🟢 High' : stock.earnings_quality === 'Medium' ? '🟡 Med' : '🔴 Low'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="w-full space-y-4">
             <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
@@ -231,7 +291,12 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                     </div>
                 </div>
             </div>
-            <ResponsiveTable data={data} columns={columns} onRowClick={onRowClick} />
+            <ResponsiveTable
+                data={data}
+                columns={columns}
+                onRowClick={onRowClick}
+                renderMobileCard={renderMobileCard}
+            />
         </div>
     );
 }
