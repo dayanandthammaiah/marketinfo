@@ -46,6 +46,9 @@ export function AppMaterial() {
   const [mobileOpen, setMobileOpen] = useState(false);
   
   const { data, loading, error, refresh, isRefreshing } = useData();
+  
+  // Debug logging
+  console.log('AppMaterial render - loading:', loading, 'data:', data, 'error:', error);
 
   const theme = useMemo(() => createAppTheme(mode), [mode]);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -134,7 +137,10 @@ export function AppMaterial() {
   ];
 
   const renderContent = () => {
+    console.log('renderContent called - loading:', loading, 'hasData:', !!data, 'error:', error);
+    
     if (loading && !data) {
+      console.log('Showing loading spinner');
       return (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
           <Stack spacing={2} alignItems="center">
@@ -148,6 +154,7 @@ export function AppMaterial() {
     }
 
     if (error) {
+      console.log('Showing error:', error);
       return (
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="h6">Error loading data</Typography>
@@ -156,7 +163,7 @@ export function AppMaterial() {
       );
     }
 
-    console.log('Active Tab:', activeTab, 'Data:', data); // Debug log
+    console.log('Active Tab:', activeTab, 'Data exists:', !!data, 'Nifty50 count:', data?.nifty_50?.length);
 
     switch (activeTab) {
       case 0: // India Stocks
