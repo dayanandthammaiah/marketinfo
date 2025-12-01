@@ -153,6 +153,88 @@ def fetch_single_stock(symbol, retries=2):
             if not metrics:
                 continue
             
+            # Calculate composite score (0-100)
+            score = 50  # Base score
+            
+            # ROCE contribution (max 20 points)
+            if metrics['roce'] > 20:
+                score += 20
+            elif metrics['roce'] > 15:
+                score += 15
+            elif metrics['roce'] > 10:
+                score += 10
+            elif metrics['roce'] < 5:
+                score -= 10
+            
+            # EPS Growth contribution (max 20 points)
+            if metrics['eps_growth'] > 20:
+                score += 20
+            elif metrics['eps_growth'] > 15:
+                score += 15
+            elif metrics['eps_growth'] > 10:
+                score += 10
+            elif metrics['eps_growth'] < 0:
+                score -= 15
+            
+            # FCF Yield contribution (max 15 points)
+            if metrics['fcf_yield'] > 5:
+                score += 15
+            elif metrics['fcf_yield'] > 3:
+                score += 10
+            elif metrics['fcf_yield'] > 1:
+                score += 5
+            
+            # Debt/EBITDA contribution (max 15 points)
+            if metrics['debt_to_ebitda'] < 1.5:
+                score += 15
+            elif metrics['debt_to_ebitda'] < 2.5:
+                score += 10
+            elif metrics['debt_to_ebitda'] < 3.5:
+                score += 5
+            elif metrics['debt_to_ebitda'] > 5:
+                score -= 10
+            
+            # 6M Return contribution (max 10 points)
+            if metrics['price_6m_return'] > 15:
+                score += 10
+            elif metrics['price_6m_return'] > 5:
+                score += 5
+            elif metrics['price_6m_return'] < -10:
+                score -= 10
+            
+            # P/E Ratio contribution (max 10 points)
+            if 10 < metrics['pe_ratio'] < 20:
+                score += 10
+            elif 8 < metrics['pe_ratio'] < 25:
+                score += 5
+            elif metrics['pe_ratio'] > 40:
+                score -= 10
+            
+            # Earnings Quality (max 10 points)
+            if metrics['earnings_quality'] == 'High':
+                score += 10
+            elif metrics['earnings_quality'] == 'Medium':
+                score += 5
+            
+            # Cap score between 0-100
+            score = max(0, min(100, score))
+            
+            # Determine recommendation
+            if score >= 80:
+                recommendation = "Strong Buy"
+            elif score >= 70:
+                recommendation = "Buy"
+            elif score >= 50:
+                recommendation = "Hold"
+            elif score >= 40:
+                recommendation = "Sell"
+            else:
+                recommendation = "Avoid"
+            
+            # EV/EBITDA vs Sector (calculate relative position)
+            sector_ev_avg = 12.0  # Average sector EV/EBITDA
+            ev_vs_sector = ((metrics['ev_to_ebitda'] - sector_ev_avg) / sector_ev_avg) * 100
+            
             # Prepare stock data
             stock_data = {
                 'symbol': symbol,
@@ -178,12 +260,16 @@ def fetch_single_stock(symbol, retries=2):
                 'price_6m_return': metrics['price_6m_return'],
                 'debt_to_ebitda': metrics['debt_to_ebitda'],
                 'ev_to_ebitda': metrics['ev_to_ebitda'],
+                'ev_vs_sector': ev_vs_sector,
                 'ebitda': info.get('ebitda', 0),
                 'history': [],
                 'institutionalHolding': f"{metrics['institutional_holding']:.1f}%",
                 'rsi': metrics['rsi'],
                 'esg_score': metrics['esg_score'],
-                'earnings_quality': metrics['earnings_quality']
+                'earnings_quality': metrics['earnings_quality'],
+                'score': score,
+                'recommendation': recommendation,
+                'rank': 0  # Will be set after sorting all stocks
             }
             
             logger.info(f"✓ {symbol}: ${current_price:.2f} ({change_percent:+.2f}%)")

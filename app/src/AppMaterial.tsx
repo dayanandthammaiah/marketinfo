@@ -65,23 +65,20 @@ export function AppMaterial() {
     setMobileOpen(!mobileOpen);
   };
 
-  // Prepare India stocks data for table
+  // Prepare India stocks data for INSTITUTIONAL table
   const indiaColumns = [
-    { id: 'symbol', label: 'Symbol', minWidth: 100, align: 'left' as const },
-    { id: 'name', label: 'Company', minWidth: 200, align: 'left' as const },
-    { 
-      id: 'current_price', 
-      label: 'Price (INR)', 
-      minWidth: 120, 
-      align: 'right' as const,
-      format: (val: number) => `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    },
-    { id: 'changePercent', label: 'Change %', minWidth: 100, align: 'right' as const },
-    { id: 'roce', label: 'ROCE %', minWidth: 100, align: 'right' as const, tooltip: 'Return on Capital Employed' },
-    { id: 'eps_growth', label: 'EPS Growth %', minWidth: 120, align: 'right' as const },
-    { id: 'pe_ratio', label: 'P/E', minWidth: 80, align: 'right' as const },
-    { id: 'score', label: 'Score', minWidth: 80, align: 'center' as const },
-    { id: 'recommendation', label: 'Recommendation', minWidth: 150, align: 'center' as const },
+    { id: 'symbol', label: 'Stock', minWidth: 100, align: 'left' as const, sortable: true },
+    { id: 'roce', label: 'ROCE', minWidth: 100, align: 'center' as const, tooltip: 'Return on Capital Employed', sortable: true },
+    { id: 'eps_growth', label: 'EPS Growth (3Y)', minWidth: 130, align: 'center' as const, tooltip: '3-Year CAGR', sortable: true },
+    { id: 'fcf_yield', label: 'FCF Yield', minWidth: 100, align: 'center' as const, tooltip: 'Free Cash Flow Yield', sortable: true },
+    { id: 'ev_ebitda_vs_sector', label: 'EV/EBITDA vs Sector', minWidth: 150, align: 'center' as const, sortable: true },
+    { id: 'price_6m_return', label: '6M Rel. Return', minWidth: 120, align: 'center' as const, tooltip: '6-Month Relative Return', sortable: true },
+    { id: 'debt_to_ebitda', label: 'Debt/EBITDA', minWidth: 120, align: 'center' as const, sortable: true },
+    { id: 'earnings_quality', label: 'Earnings Quality', minWidth: 130, align: 'center' as const, sortable: true },
+    { id: 'esg_score', label: 'ESG Score', minWidth: 100, align: 'center' as const, tooltip: 'Environmental, Social, Governance Score', sortable: true },
+    { id: 'score', label: 'Composite', minWidth: 100, align: 'center' as const, tooltip: 'Composite Score (0-100)', sortable: true },
+    { id: 'rank', label: 'Rank', minWidth: 80, align: 'center' as const, sortable: true },
+    { id: 'recommendation', label: 'Recommendation', minWidth: 150, align: 'center' as const, sortable: true },
   ];
 
   // US Stocks columns with USD
@@ -103,16 +100,37 @@ export function AppMaterial() {
     { id: 'recommendation', label: 'Recommendation', minWidth: 150, align: 'center' as const },
   ];
 
-  // Prepare crypto data for table
-  const cryptoColumns = [
-    { id: 'symbol', label: 'Symbol', minWidth: 100, align: 'left' as const },
-    { id: 'name', label: 'Name', minWidth: 150, align: 'left' as const },
-    { id: 'current_price', label: 'Price (USD)', minWidth: 120, align: 'right' as const },
-    { id: 'price_change_percentage_24h', label: '24h Change', minWidth: 120, align: 'right' as const },
-    { id: 'market_cap', label: 'Market Cap', minWidth: 150, align: 'right' as const, format: (val: number) => `$${(val / 1e9).toFixed(2)}B` },
-    { id: 'rsi', label: 'RSI(14)', minWidth: 100, align: 'right' as const },
-    { id: 'score', label: 'Score', minWidth: 80, align: 'center' as const },
-    { id: 'recommendation', label: 'Action', minWidth: 150, align: 'center' as const },
+  // Crypto Table 1: Technical Indicators Summary
+  const cryptoTechnicalColumns = [
+    { id: 'symbol', label: 'Asset', minWidth: 120, align: 'left' as const, sortable: true },
+    { 
+      id: 'current_price', 
+      label: 'Price', 
+      minWidth: 130, 
+      align: 'right' as const,
+      format: (val: number) => `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    },
+    { id: 'price_change_percentage_30d', label: '1m', minWidth: 90, align: 'center' as const, sortable: true },
+    { id: 'price_change_7d', label: '3m', minWidth: 90, align: 'center' as const, sortable: true },
+    { id: 'price_change_percentage_24h', label: '6m', minWidth: 90, align: 'center' as const, sortable: true },
+    { id: 'price_change_1y', label: '1y', minWidth: 90, align: 'center' as const, sortable: true },
+    { id: 'price_change_5y', label: '5Y', minWidth: 90, align: 'center' as const, sortable: true },
+    { id: 'rsi', label: 'RSI(14)', minWidth: 100, align: 'center' as const, tooltip: 'Relative Strength Index', sortable: true },
+    { id: 'macd_vs_200ema', label: 'MACD', minWidth: 100, align: 'center' as const, tooltip: 'MACD Trend', sortable: true },
+    { id: 'distance_from_200_ema', label: 'vs 200 EMA', minWidth: 120, align: 'center' as const, sortable: true },
+    { id: 'recommendation', label: 'Rec.', minWidth: 120, align: 'center' as const, sortable: true },
+  ];
+
+  // Crypto Table 2: Institutional-Grade Analysis
+  const cryptoInstitutionalColumns = [
+    { id: 'symbol', label: 'Asset', minWidth: 120, align: 'left' as const, sortable: true },
+    { id: 'score', label: 'Score (0-100)', minWidth: 120, align: 'center' as const, sortable: true },
+    { id: 'adx', label: 'ADX(14)', minWidth: 100, align: 'center' as const, tooltip: 'Trend Strength', sortable: true },
+    { id: 'cmf', label: 'CMF(20)', minWidth: 100, align: 'center' as const, tooltip: 'Chaikin Money Flow', sortable: true },
+    { id: 'distance_from_200_ema', label: 'Dist 200EMA', minWidth: 120, align: 'center' as const, sortable: true },
+    { id: 'macd_slope', label: 'MACD Slope', minWidth: 120, align: 'center' as const, sortable: true },
+    { id: 'squeeze', label: 'Squeeze', minWidth: 90, align: 'center' as const },
+    { id: 'recommendation', label: 'Composite Rec.', minWidth: 150, align: 'center' as const, sortable: true },
   ];
 
   const renderContent = () => {
@@ -191,20 +209,41 @@ export function AppMaterial() {
 
       case 2: // Crypto
         return (
-          <Stack spacing={3}>
+          <Stack spacing={4}>
+            {/* Technical Indicators Summary */}
             <Box>
               <Typography variant="h4" fontWeight={700} gutterBottom>
-                ₿ Cryptocurrency Market
+                ₿ Cryptocurrency Market - Technical Indicators
               </Typography>
               <Typography variant="body1" color="text.secondary" mb={3}>
-                Top cryptocurrencies with technical analysis and market indicators
+                Multi-timeframe price analysis with RSI, MACD, and trend indicators
               </Typography>
               {data?.crypto && data.crypto.length > 0 ? (
                 <StockDataTable
                   data={data.crypto}
-                  columns={cryptoColumns}
+                  columns={cryptoTechnicalColumns}
                   onRowClick={(row) => console.log('Row clicked:', row)}
-                  maxHeight={700}
+                  maxHeight={500}
+                />
+              ) : (
+                <Alert severity="info">No cryptocurrency data available</Alert>
+              )}
+            </Box>
+
+            {/* Institutional-Grade Analysis */}
+            <Box>
+              <Typography variant="h5" fontWeight={700} gutterBottom>
+                Institutional-Grade Analysis
+              </Typography>
+              <Typography variant="body1" color="text.secondary" mb={3}>
+                Advanced technical indicators: ADX, CMF, MACD Slope, and composite scoring
+              </Typography>
+              {data?.crypto && data.crypto.length > 0 ? (
+                <StockDataTable
+                  data={data.crypto}
+                  columns={cryptoInstitutionalColumns}
+                  onRowClick={(row) => console.log('Row clicked:', row)}
+                  maxHeight={500}
                 />
               ) : (
                 <Alert severity="info">No cryptocurrency data available</Alert>

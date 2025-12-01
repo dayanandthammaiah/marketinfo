@@ -97,21 +97,29 @@ def analyze_and_score_stocks(stock_dict):
     analyzed = []
     for ticker, data in stock_dict.items():
         try:
-            score, rec, reasons = score_stock(data)
-            data['score'] = score
-            data['recommendation'] = rec
-            data['reasons'] = reasons
+            # If stock already has score and recommendation (from enhanced fetcher), use it
+            if 'score' not in data or 'recommendation' not in data:
+                score, rec, reasons = score_stock(data)
+                data['score'] = score
+                data['recommendation'] = rec
+                data['reasons'] = reasons if 'reasons' not in data else data['reasons']
             analyzed.append(data)
         except Exception as e:
             logger.warning(f"Error scoring {ticker}: {e}")
             # Include stock even if scoring fails
-            data['score'] = 50
-            data['recommendation'] = 'HOLD'
-            data['reasons'] = []
+            if 'score' not in data:
+                data['score'] = 50
+            if 'recommendation' not in data:
+                data['recommendation'] = 'Hold'
+            if 'reasons' not in data:
+                data['reasons'] = []
             analyzed.append(data)
     
-    # Sort by score
+    # Sort by score and assign ranks
     analyzed.sort(key=lambda x: x.get('score', 0), reverse=True)
+    for rank, stock in enumerate(analyzed, start=1):
+        stock['rank'] = rank
+    
     return analyzed
 
 def main():

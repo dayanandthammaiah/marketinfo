@@ -234,30 +234,50 @@ def fetch_crypto_data():
             hist_params = {'vs_currency': 'usd', 'days': '200'}
             
             # Add delay before historical data request
-            time.sleep(1.5)  # 1.5 second delay between requests
+            time.sleep(1.2)  # 1.2 second delay between requests
             logger.info(f"Fetching historical data for {symbol}...")
-            hist_response = requests.get(hist_url, params=hist_params, timeout=15)
             
             indicators = {}
-            if hist_response.ok:
-                hist_data = hist_response.json()
-                prices = hist_data.get('prices', [])
+            try:
+                hist_response = requests.get(hist_url, params=hist_params, timeout=15)
                 
-                if prices:
-                    # Convert to DataFrame
-                    df = pd.DataFrame(prices, columns=['timestamp', 'price'])
-                    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                if hist_response.status_code == 200:
+                    hist_data = hist_response.json()
+                    prices = hist_data.get('prices', [])
+                    volumes = hist_data.get('total_volumes', [])
                     
-                    # Add high/low approximations
-                    df['high'] = df['price'] * 1.02
-                    df['low'] = df['price'] * 0.98
-                    df['volume'] = 1000000  # Placeholder
-                    
-                    # Calculate technical indicators
-                    indicators = calculate_technical_indicators(df)
-                    logger.info(f"✓ Calculated indicators for {symbol}")
-            else:
-                logger.warning(f"Could not fetch historical data for {symbol}, using defaults")
+                    if prices and len(prices) > 50:
+                        # Convert to DataFrame with proper OHLC data
+                        df = pd.DataFrame(prices, columns=['timestamp', 'price'])
+                        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                        
+                        # Create realistic high/low based on price volatility
+                        df['returns'] = df['price'].pct_change()
+                        daily_vol = df['returns'].std()
+                        if daily_vol > 0:
+                            df['high'] = df['price'] * (1 + abs(daily_vol))
+                            df['low'] = df['price'] * (1 - abs(daily_vol))
+                        else:
+                            df['high'] = df['price'] * 1.02
+                            df['low'] = df['price'] * 0.98
+                        
+                        # Add volume data if available
+                        if volumes and len(volumes) == len(prices):
+                            df['volume'] = [v[1] for v in volumes]
+                        else:
+                            df['volume'] = df['price'] * 1000000  # Volume proxy
+                        
+                        # Calculate technical indicators
+                        indicators = calculate_technical_indicators(df)
+                        logger.info(f"✓ Calculated indicators for {symbol}: RSI={indicators.get('rsi', 50):.1f}")
+                    else:
+                        logger.warning(f"Not enough price data for {symbol} ({len(prices) if prices else 0} points), using defaults")
+                elif hist_response.status_code == 429:
+                    logger.warning(f"Rate limited for {symbol}, using defaults")
+                else:
+                    logger.warning(f"HTTP {hist_response.status_code} for {symbol}, using defaults")
+            except Exception as e:
+                logger.warning(f"Error fetching historical data for {symbol}: {e}")
             
             # Build crypto data object
             crypto_obj = {

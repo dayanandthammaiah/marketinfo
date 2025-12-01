@@ -22,13 +22,17 @@ export interface StockData {
   price_6m_return: number;
   debt_to_ebitda: number;
   ev_to_ebitda: number;
+  ev_vs_sector?: number;
   ebitda: number;
   history: { time: string; value: number }[];
   score: number;
   recommendation: string;
   reasons: string[];
+  rank?: number;
   institutionalHolding?: string;
   rsi?: number;
+  esg_score?: number;
+  earnings_quality?: string;
 }
 
 export interface CryptoData {
