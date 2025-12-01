@@ -49,9 +49,11 @@ export interface CryptoData {
   low_24h: number;
   price_change_24h: number;
   price_change_percentage_24h: number;
-  price_change_7d?: number;
-  price_change_30d?: number;
-  price_change_1y?: number;
+  price_change_percentage_7d_in_currency?: number;
+  price_change_percentage_30d_in_currency?: number;
+  price_change_percentage_3m?: number;
+  price_change_percentage_200d_in_currency?: number;
+  price_change_percentage_1y_in_currency?: number;
   market_cap_change_24h: number;
   market_cap_change_percentage_24h: number;
   circulating_supply: number;

@@ -32,6 +32,21 @@ const CRYPTO_IDS = [
     'usdc', 'cardano', 'avalanche-2', 'dogecoin'
 ];
 
+const BINANCE_SYMBOL_MAP: Record<string, string> = {
+    'bitcoin': 'BTCUSDT',
+    'ethereum': 'ETHUSDT',
+    'tether': 'USDTUSDT',
+    'binancecoin': 'BNBUSDT',
+    'solana': 'SOLUSDT',
+    'ripple': 'XRPUSDT',
+    'usdc': 'USDCUSDT',
+    'cardano': 'ADAUSDT',
+    'avalanche-2': 'AVAXUSDT',
+    'dogecoin': 'DOGEUSDT'
+};
+
+const BINANCE_BASE_URL = 'https://api.binance.com/api/v3';
+
 export const MarketDataService = {
     /**
      * Fetch all data - Live from APIs
@@ -139,13 +154,17 @@ export const MarketDataService = {
                         price_6m_return: changePercent * 2, // Mock
                         debt_to_ebitda: 1.2,
                         ev_to_ebitda: 15,
+                        ev_vs_sector: -5 + Math.random() * 10, // Mock
                         ebitda: 5000000000,
                         history: [], // Would need separate call
                         score: score,
                         recommendation: action,
                         reasons: action === 'BUY' ? ['Strong Momentum', 'Undervalued'] : ['Overbought', 'High Valuation'],
                         institutionalHolding: `${(40 + Math.random() * 40).toFixed(1)}%`,
-                        rsi: parseFloat(rsi.toFixed(2))
+                        rsi: parseFloat(rsi.toFixed(2)),
+                        esg_score: 60 + Math.random() * 30, // Mock
+                        earnings_quality: Math.random() > 0.5 ? 'High' : 'Medium', // Mock
+                        rank: Math.floor(Math.random() * 100) + 1 // Mock
                     };
                 });
 
@@ -179,6 +198,10 @@ export const MarketDataService = {
                 low_24h: c.low_24h,
                 price_change_24h: c.price_change_24h,
                 price_change_percentage_24h: c.price_change_percentage_24h,
+                price_change_percentage_7d_in_currency: c.price_change_percentage_7d_in_currency,
+                price_change_percentage_30d_in_currency: c.price_change_percentage_30d_in_currency,
+                price_change_percentage_200d_in_currency: c.price_change_percentage_200d_in_currency,
+                price_change_percentage_1y_in_currency: c.price_change_percentage_1y_in_currency,
                 market_cap_change_24h: c.market_cap_change_24h,
                 market_cap_change_percentage_24h: c.market_cap_change_percentage_24h,
                 circulating_supply: c.circulating_supply,
@@ -243,11 +266,106 @@ export const MarketDataService = {
             priority: 1,
             fetch: async () => {
                 await rateLimiter.waitForSlot('coingecko', 45, 60000);
-                const url = `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&ids=${idsCsv}&order=market_cap_desc&sparkline=false&price_change_percentage=24h`;
+                const url = `${COINGECKO_BASE_URL}/coins/markets?vs_currency=usd&ids=${idsCsv}&order=market_cap_desc&sparkline=false&price_change_percentage=24h,7d,30d,200d,1y`;
                 const response = await withRetry(() => fetchWithTimeout(url), 3, 400, 250);
                 if (!response.ok) throw new Error('CoinGecko failed');
                 const data = await response.json();
-                return (data || []).map((c: any) => this.normalizeCrypto(c, 'coingecko'));
+
+                // Enhance with technicals from Binance
+                const enhancedData = await Promise.all(data.map(async (coin: any) => {
+                    const binanceSymbol = BINANCE_SYMBOL_MAP[coin.id];
+                    let technicals = {};
+
+                    if (binanceSymbol) {
+                        try {
+                            // Fetch OHLCV from Binance
+                            // limit 100 days
+                            const klinesUrl = `${BINANCE_BASE_URL}/klines?symbol=${binanceSymbol}&interval=1d&limit=100`;
+                            const klinesRes = await fetch(klinesUrl);
+                            if (klinesRes.ok) {
+                                const klines = await klinesRes.json();
+                                // klines format: [ [open_time, open, high, low, close, volume, ...], ... ]
+                                const highs = klines.map((k: any) => parseFloat(k[2]));
+                                const lows = klines.map((k: any) => parseFloat(k[3]));
+                                const closes = klines.map((k: any) => parseFloat(k[4]));
+                                const volumes = klines.map((k: any) => parseFloat(k[5]));
+
+                                const rsiSeries = TechnicalAnalysis.rsiSeries(closes, 14);
+                                const currentRsi = rsiSeries[rsiSeries.length - 1] || 50;
+
+                                const { macd } = TechnicalAnalysis.macdSeries(closes);
+                                const currentMacd = macd[macd.length - 1] || 0;
+
+                                const ema200Series = TechnicalAnalysis.emaSeries(closes, 200);
+                                const currentEma200 = ema200Series[ema200Series.length - 1];
+
+                                const adxSeries = TechnicalAnalysis.adxSeries(highs, lows, closes, 14);
+                                const currentAdx = adxSeries[adxSeries.length - 1] || 0;
+
+                                const cmfSeries = TechnicalAnalysis.cmfSeries(highs, lows, closes, volumes, 20);
+                                const currentCmf = cmfSeries[cmfSeries.length - 1] || 0;
+
+                                const { upper, lower } = TechnicalAnalysis.bollingerBands(closes, 20, 2);
+                                const currentUpper = upper[upper.length - 1];
+                                const currentLower = lower[lower.length - 1];
+
+                                // Squeeze: Bollinger Bands inside Keltner Channels (simplified here as BB width low)
+                                const bbWidth = (currentUpper - currentLower) / closes[closes.length - 1];
+                                const squeeze = bbWidth < 0.05 ? 'On' : 'No squeeze';
+
+                                const dist200 = currentEma200 ? ((closes[closes.length - 1] - currentEma200) / currentEma200) * 100 : 0;
+
+                                // MACD Slope
+                                const prevMacd = macd[macd.length - 2] || 0;
+                                const macdSlope = currentMacd - prevMacd;
+
+                                // Score Calculation
+                                let score = 50;
+                                if (currentRsi < 30) score += 15;
+                                if (currentRsi > 70) score -= 15;
+                                if (currentAdx > 25) score += 10; // Strong trend
+                                if (currentCmf > 0.05) score += 10; // Buying pressure
+                                if (dist200 > 0) score += 10; // Above 200 EMA
+                                if (macdSlope > 0) score += 5;
+
+                                // Cap score
+                                score = Math.min(100, Math.max(0, score));
+
+                                let rec = 'HOLD';
+                                if (score >= 75) rec = 'STRONG BUY';
+                                else if (score >= 60) rec = 'BUY';
+                                else if (score <= 25) rec = 'STRONG SELL';
+                                else if (score <= 40) rec = 'SELL';
+
+                                // 3m Return (approx 90 days)
+                                const price3mAgo = closes[closes.length - 91];
+                                const change3m = price3mAgo ? ((closes[closes.length - 1] - price3mAgo) / price3mAgo) * 100 : 0;
+
+                                technicals = {
+                                    rsi: currentRsi,
+                                    macd_vs_200ema: currentMacd > 0 ? 'BULLISH' : 'BEARISH',
+                                    adx: currentAdx,
+                                    cmf: currentCmf,
+                                    distance_from_200_ema: dist200,
+                                    macd_slope: macdSlope,
+                                    squeeze: squeeze,
+                                    score: score,
+                                    recommendation: rec,
+                                    price_change_percentage_3m: change3m
+                                };
+                            }
+                        } catch (e) {
+                            console.warn(`Failed to fetch history for ${coin.id}`, e);
+                        }
+                    }
+
+                    return {
+                        ...this.normalizeCrypto(coin, 'coingecko'),
+                        ...technicals
+                    };
+                }));
+
+                return enhancedData;
             }
         });
 

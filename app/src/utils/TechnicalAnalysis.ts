@@ -100,6 +100,141 @@ export const TechnicalAnalysis = {
     return { macd, signal, histogram };
   },
 
+  // Bollinger Bands
+  bollingerBands(prices: number[], period: number = 20, multiplier: number = 2): { upper: number[]; lower: number[]; middle: number[] } {
+    const sma = this.smaSeries(prices, period);
+    const upper: number[] = [];
+    const lower: number[] = [];
+    const middle: number[] = [];
+
+    for (let i = 0; i < prices.length; i++) {
+      if (sma[i] === null) {
+        upper.push(0);
+        lower.push(0);
+        middle.push(0);
+        continue;
+      }
+
+      // Calculate standard deviation
+      let sumSqDiff = 0;
+      let count = 0;
+      for (let j = i - period + 1; j <= i; j++) {
+        sumSqDiff += Math.pow(prices[j] - sma[i]!, 2);
+        count++;
+      }
+      const stdDev = Math.sqrt(sumSqDiff / count);
+
+      upper.push(sma[i]! + stdDev * multiplier);
+      lower.push(sma[i]! - stdDev * multiplier);
+      middle.push(sma[i]!);
+    }
+    return { upper, lower, middle };
+  },
+
+  // Average Directional Index (ADX)
+  adxSeries(highs: number[], lows: number[], closes: number[], period: number = 14): number[] {
+    if (highs.length < period * 2) return new Array(highs.length).fill(0);
+
+    const tr: number[] = [];
+    const dmPlus: number[] = [];
+    const dmMinus: number[] = [];
+
+    // 1. Calculate TR, +DM, -DM
+    for (let i = 1; i < highs.length; i++) {
+      const currentHigh = highs[i];
+      const currentLow = lows[i];
+      const prevClose = closes[i - 1];
+
+      tr.push(Math.max(
+        currentHigh - currentLow,
+        Math.abs(currentHigh - prevClose),
+        Math.abs(currentLow - prevClose)
+      ));
+
+      const upMove = currentHigh - highs[i - 1];
+      const downMove = lows[i - 1] - currentLow;
+
+      if (upMove > downMove && upMove > 0) dmPlus.push(upMove);
+      else dmPlus.push(0);
+
+      if (downMove > upMove && downMove > 0) dmMinus.push(downMove);
+      else dmMinus.push(0);
+    }
+
+    // Helper for smoothed averages (Wilder's Smoothing)
+    const smooth = (data: number[], period: number) => {
+      const result: number[] = [];
+      let sum = 0;
+      // First value is simple sum
+      for (let i = 0; i < period; i++) sum += data[i];
+      result.push(sum);
+
+      for (let i = period; i < data.length; i++) {
+        const prev = result[result.length - 1];
+        result.push(prev - (prev / period) + data[i]);
+      }
+      return result;
+    };
+
+    const trSmooth = smooth(tr, period);
+    const dmPlusSmooth = smooth(dmPlus, period);
+    const dmMinusSmooth = smooth(dmMinus, period);
+
+    // Calculate DX and ADX
+    const adx: number[] = new Array(highs.length).fill(0);
+    const dxValues: number[] = [];
+
+    // Align indices
+    const offset = period;
+
+    for (let i = 0; i < trSmooth.length; i++) {
+      const diPlus = (dmPlusSmooth[i] / trSmooth[i]) * 100;
+      const diMinus = (dmMinusSmooth[i] / trSmooth[i]) * 100;
+      const dx = (Math.abs(diPlus - diMinus) / (diPlus + diMinus)) * 100;
+      dxValues.push(dx);
+    }
+
+    // ADX is smoothed DX
+    const adxSmooth = smooth(dxValues, period);
+
+    // Fill the end of the array
+    for (let i = 0; i < adxSmooth.length; i++) {
+      // approximate index mapping
+      const realIndex = i + (period * 2);
+      if (realIndex < adx.length) {
+        adx[realIndex] = adxSmooth[i];
+      }
+    }
+
+    return adx;
+  },
+
+  // Chaikin Money Flow (CMF)
+  cmfSeries(highs: number[], lows: number[], closes: number[], volumes: number[], period: number = 20): number[] {
+    const mfv: number[] = [];
+    for (let i = 0; i < highs.length; i++) {
+      const range = highs[i] - lows[i];
+      if (range === 0) {
+        mfv.push(0);
+      } else {
+        const val = ((closes[i] - lows[i]) - (highs[i] - closes[i])) / range;
+        mfv.push(val * volumes[i]);
+      }
+    }
+
+    const cmf: number[] = new Array(highs.length).fill(0);
+    for (let i = period - 1; i < highs.length; i++) {
+      let sumMfv = 0;
+      let sumVol = 0;
+      for (let j = i - period + 1; j <= i; j++) {
+        sumMfv += mfv[j];
+        sumVol += volumes[j];
+      }
+      cmf[i] = sumVol === 0 ? 0 : sumMfv / sumVol;
+    }
+    return cmf;
+  },
+
   getRecommendation(_price: number, rsi: number | null): { action: 'BUY' | 'SELL' | 'HOLD', score: number } {
     let score = 50;
     if (rsi != null) {

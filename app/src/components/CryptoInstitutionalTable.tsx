@@ -1,75 +1,60 @@
-import { ResponsiveTable, type Column } from './ResponsiveTable';
+import React, { useState } from 'react';
 import type { CryptoData } from '../types';
-import { cn } from '../lib/utils';
+import { ResponsiveTable, type Column } from './ResponsiveTable';
 import {
-    getRecommendationColor,
-    getRSIColor,
-    getScoreColor
-} from '../utils/metricColors';
+    Activity, BarChart2,
+    ChevronDown, ChevronUp
+} from 'lucide-react';
 
 interface CryptoInstitutionalTableProps {
     data: CryptoData[];
-    onRowClick?: (crypto: CryptoData) => void;
-}
-
-// Helper for trend badges
-function getTrendBadge(trend: string) {
-    const isBullish = trend.toUpperCase().includes('BULLISH');
-    return (
-        <span className={cn(
-            "px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide shadow-sm",
-            isBullish
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800"
-        )}>
-            {trend}
-        </span>
-    );
-}
-
-// Helper to format percentage changes with colors
-function getPercentageDisplay(value: number, digits: number = 2): { text: string; color: string } {
-    const formatted = `${value > 0 ? '+' : ''}${value.toFixed(digits)}%`;
-    if (value > 0) return { text: formatted, color: 'text-success-main' };
-    if (value < 0) return { text: formatted, color: 'text-danger-main' };
-    return { text: formatted, color: 'text-muted' };
-}
-
-// Helper to get emoji indicator
-function getEmojiIndicator(value: number, good: number, fair: number, type: 'positive' | 'negative' = 'positive'): string {
-    if (type === 'positive') {
-        if (value >= good) return '🟢';
-        if (value >= fair) return '🟡';
-        return '🔴';
-    } else {
-        if (value <= good) return '🟢';
-        if (value <= fair) return '🟡';
-        return '🔴';
-    }
+    onRowClick?: (coin: CryptoData) => void;
 }
 
 export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitutionalTableProps) {
-    const columns: Column<CryptoData>[] = [
+    const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+
+    const toggleRow = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const getRecommendationColor = (rec: string) => {
+        switch (rec?.toUpperCase()) {
+            case 'STRONG BUY': return { text: 'text-success-main', badge: 'bg-success-main/10 text-success-main border-success-main/20' };
+            case 'BUY': return { text: 'text-success-light', badge: 'bg-success-light/10 text-success-light border-success-light/20' };
+            case 'STRONG SELL': return { text: 'text-danger-main', badge: 'bg-danger-main/10 text-danger-main border-danger-main/20' };
+            case 'SELL': return { text: 'text-danger-light', badge: 'bg-danger-light/10 text-danger-light border-danger-light/20' };
+            default: return { text: 'text-warning-main', badge: 'bg-warning-main/10 text-warning-main border-warning-main/20' };
+        }
+    };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 75) return { text: 'text-success-main', badge: 'bg-success-main/10 text-success-main border-success-main/20' };
+        if (score >= 60) return { text: 'text-success-light', badge: 'bg-success-light/10 text-success-light border-success-light/20' };
+        if (score <= 25) return { text: 'text-danger-main', badge: 'bg-danger-main/10 text-danger-main border-danger-main/20' };
+        if (score <= 40) return { text: 'text-danger-light', badge: 'bg-danger-light/10 text-danger-light border-danger-light/20' };
+        return { text: 'text-warning-main', badge: 'bg-warning-main/10 text-warning-main border-warning-main/20' };
+    };
+
+    const formatPercent = (val?: number) => {
+        if (val === undefined || val === null) return '-';
+        const color = val > 0 ? 'text-success-main' : val < 0 ? 'text-danger-main' : 'text-muted';
+        return <span className={`font-semibold ${color}`}>{val > 0 ? '+' : ''}{val.toFixed(2)}%</span>;
+    };
+
+    // --- Technical Indicators Summary Columns ---
+    const technicalColumns: Column<CryptoData>[] = [
         {
             header: 'Asset',
             accessorKey: 'name',
             mobileLabel: 'Asset',
-            cell: (crypto) => (
+            cell: (coin) => (
                 <div className="flex items-center gap-3">
-                    {crypto.image && (
-                        <img
-                            src={crypto.image}
-                            alt={crypto.name}
-                            className="w-9 h-9 rounded-full ring-2 ring-white/20 shadow-md"
-                        />
-                    )}
+                    {coin.image && <img src={coin.image} alt={coin.name} className="w-8 h-8 rounded-full" />}
                     <div className="flex flex-col">
-                        <span className="font-bold text-main text-sm">
-                            {crypto.name}
-                        </span>
-                        <span className="text-xs text-muted font-mono uppercase tracking-wider">
-                            {crypto.symbol}
-                        </span>
+                        <span className="font-bold text-main">{coin.symbol}</span>
+                        <span className="text-xs text-muted">{coin.name}</span>
                     </div>
                 </div>
             ),
@@ -78,184 +63,171 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
             header: 'Price',
             accessorKey: 'current_price',
             mobileLabel: 'Price',
-            className: 'font-mono font-semibold',
-            cell: (crypto) => (
-                <span className="text-main">
-                    ${crypto.current_price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: crypto.current_price < 1 ? 6 : 2
-                    })}
+            cell: (coin) => (
+                <span className="font-mono font-medium text-main">
+                    ${coin.current_price.toLocaleString()}
                 </span>
             ),
         },
         {
-            header: '1m | 3m | 6m | 1y',
-            accessorKey: 'price_change_24h',
-            mobileLabel: 'Returns',
-            cell: (crypto) => {
-                const changes = [
-                    crypto.price_change_percentage_24h || 0,
-                    crypto.price_change_7d || 0,
-                    crypto.price_change_30d || 0,
-                    crypto.price_change_1y || 0
-                ];
-                return (
-                    <div className="flex flex-col gap-0.5 font-mono text-xs">
-                        {changes.map((change, idx) => {
-                            const display = getPercentageDisplay(change);
-                            return (
-                                <span key={idx} className={display.color}>
-                                    {display.text}
-                                </span>
-                            );
-                        })}
-                    </div>
-                );
-            },
+            header: '1m',
+            accessorKey: 'price_change_percentage_30d_in_currency',
+            mobileLabel: '1m',
+            cell: (coin) => formatPercent(coin.price_change_percentage_30d_in_currency),
         },
         {
-            header: 'RSI(14)',
+            header: '3m',
+            accessorKey: 'price_change_percentage_3m',
+            mobileLabel: '3m',
+            cell: (coin) => formatPercent(coin.price_change_percentage_3m),
+        },
+        {
+            header: '6m',
+            accessorKey: 'price_change_percentage_200d_in_currency',
+            mobileLabel: '6m',
+            cell: (coin) => formatPercent(coin.price_change_percentage_200d_in_currency),
+        },
+        {
+            header: '1y',
+            accessorKey: 'price_change_percentage_1y_in_currency',
+            mobileLabel: '1y',
+            cell: (coin) => formatPercent(coin.price_change_percentage_1y_in_currency),
+        },
+        {
+            header: 'RSI (14)',
             accessorKey: 'rsi',
             mobileLabel: 'RSI',
-            cell: (crypto) => {
-                const rsi = crypto.rsi || 50;
-                const colors = getRSIColor(rsi);
-                return (
-                    <span className={`${colors.badge} px-2 py-1 rounded-full text-xs font-bold`}>
-                        {rsi.toFixed(2)}
-                    </span>
-                );
+            cell: (coin) => {
+                const rsi = coin.rsi || 50;
+                let color = 'text-warning-main';
+                if (rsi > 70) color = 'text-danger-main';
+                if (rsi < 30) color = 'text-success-main';
+                return <span className={`font-mono font-bold ${color}`}>{rsi.toFixed(1)}</span>;
             },
         },
         {
             header: 'MACD',
             accessorKey: 'macd_vs_200ema',
             mobileLabel: 'MACD',
-            cell: (crypto) => getTrendBadge(crypto.macd_vs_200ema || 'NEUTRAL'),
+            cell: (coin) => {
+                const signal = coin.macd_vs_200ema === 'BULLISH' ? 'Bullish' : 'Bearish';
+                const color = signal === 'Bullish' ? 'text-success-main' : 'text-danger-main';
+                return <span className={`font-bold ${color}`}>{signal}</span>;
+            },
         },
         {
             header: 'vs 200 EMA',
             accessorKey: 'distance_from_200_ema',
             mobileLabel: '200EMA',
-            cell: (crypto) => {
-                const dist = crypto.distance_from_200_ema || 0;
-                const emoji = dist > 0 ? '🟢' : '🔴';
-                return (
-                    <span className="font-semibold text-main">
-                        {emoji} {dist > 0 ? '+' : ''}{dist.toFixed(1)}%
-                    </span>
-                );
+            cell: (coin) => {
+                const dist = coin.distance_from_200_ema || 0;
+                const color = dist > 0 ? 'text-success-main' : 'text-danger-main';
+                return <span className={`font-mono font-bold ${color}`}>{dist > 0 ? '+' : ''}{dist.toFixed(1)}%</span>;
             },
         },
         {
             header: 'Rec.',
             accessorKey: 'recommendation',
             mobileLabel: 'Rec.',
-            cell: (crypto) => {
-                const colors = getRecommendationColor(crypto.recommendation || 'HOLD');
+            cell: (coin) => {
+                const colors = getRecommendationColor(coin.recommendation || 'Hold');
                 return (
-                    <span className={`${colors.badge} px-2 py-1 rounded-lg text-xs font-bold uppercase`}>
-                        {crypto.recommendation || 'HOLD'}
+                    <span className={`${colors.badge} px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap`}>
+                        {coin.recommendation || 'Hold'}
                     </span>
                 );
             },
         },
     ];
 
-    // Second table for institutional analysis
+    // --- Institutional-Grade Analysis Columns ---
     const institutionalColumns: Column<CryptoData>[] = [
         {
             header: 'Asset',
             accessorKey: 'name',
             mobileLabel: 'Asset',
-            cell: (crypto) => (
-                <div className="flex items-center gap-2">
-                    {crypto.image && (
-                        <img src={crypto.image} alt={crypto.name} className="w-7 h-7 rounded-full" />
-                    )}
-                    <span className="font-bold text-main text-sm">{crypto.symbol}</span>
+            cell: (coin) => (
+                <div className="flex items-center gap-3">
+                    {coin.image && <img src={coin.image} alt={coin.name} className="w-8 h-8 rounded-full" />}
+                    <div className="flex flex-col">
+                        <span className="font-bold text-main">{coin.symbol}</span>
+                    </div>
                 </div>
             ),
         },
         {
-            header: 'Score (0-100)',
+            header: 'Score',
             accessorKey: 'score',
             mobileLabel: 'Score',
-            cell: (crypto) => {
-                const score = crypto.score || 50;
+            cell: (coin) => {
+                const score = coin.score || 50;
                 const colors = getScoreColor(score);
                 return (
-                    <span className={`${colors.badge} px-3 py-1 rounded-full text-sm font-bold`}>
-                        {score}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-16 bg-surface-light rounded-full h-2.5 overflow-hidden">
+                            <div className={`h-full ${colors.text.replace('text-', 'bg-')}`} style={{ width: `${score}%` }}></div>
+                        </div>
+                        <span className={`font-bold ${colors.text}`}>{score.toFixed(0)}</span>
+                    </div>
                 );
             },
         },
         {
-            header: 'ADX(14)',
+            header: 'ADX (14)',
             accessorKey: 'adx',
             mobileLabel: 'ADX',
-            cell: (crypto) => {
-                const adx = crypto.adx || 25;
-                const emoji = getEmojiIndicator(adx, 25, 20, 'positive');
+            cell: (coin) => {
+                const adx = coin.adx || 0;
+                const strength = adx > 25 ? 'Strong' : 'Weak';
+                const color = adx > 25 ? 'text-success-main' : 'text-muted';
                 return (
-                    <span className="font-semibold text-main">
-                        {emoji} {adx.toFixed(2)}
-                    </span>
+                    <div className="flex flex-col">
+                        <span className={`font-bold ${color}`}>{adx.toFixed(1)}</span>
+                        <span className="text-[10px] text-muted uppercase">{strength}</span>
+                    </div>
                 );
             },
         },
         {
-            header: 'CMF(20)',
+            header: 'CMF (20)',
             accessorKey: 'cmf',
             mobileLabel: 'CMF',
-            cell: (crypto) => {
-                const cmf = crypto.cmf || 0;
-                const emoji = cmf > 0 ? '🟢' : '🔴';
-                return (
-                    <span className="font-semibold text-main">
-                        {emoji} {cmf.toFixed(3)}
-                    </span>
-                );
+            cell: (coin) => {
+                const cmf = coin.cmf || 0;
+                const color = cmf > 0 ? 'text-success-main' : 'text-danger-main';
+                return <span className={`font-mono font-bold ${color}`}>{cmf > 0 ? '+' : ''}{cmf.toFixed(2)}</span>;
             },
         },
         {
             header: 'Dist 200EMA',
             accessorKey: 'distance_from_200_ema',
-            mobileLabel: 'EMA',
-            cell: (crypto) => {
-                const dist = crypto.distance_from_200_ema || 0;
-                const emoji = getEmojiIndicator(dist, 5, 0, 'positive');
-                return (
-                    <span className="font-semibold text-main">
-                        {emoji} {dist.toFixed(2)}%
-                    </span>
-                );
+            mobileLabel: 'Dist',
+            cell: (coin) => {
+                const dist = coin.distance_from_200_ema || 0;
+                const color = dist > 0 ? 'text-success-main' : 'text-danger-main';
+                return <span className={`font-mono font-bold ${color}`}>{dist > 0 ? '+' : ''}{dist.toFixed(1)}%</span>;
             },
         },
         {
             header: 'MACD Slope',
             accessorKey: 'macd_slope',
             mobileLabel: 'Slope',
-            cell: (crypto) => {
-                const slope = crypto.macd_slope || 0;
-                const emoji = slope > 0 ? '🟢' : '🔴';
-                return (
-                    <span className="font-semibold text-main">
-                        {emoji} {slope.toFixed(2)}
-                    </span>
-                );
+            cell: (coin) => {
+                const slope = coin.macd_slope || 0;
+                const color = slope > 0 ? 'text-success-main' : 'text-danger-main';
+                return <span className={`font-mono font-bold ${color}`}>{slope > 0 ? '+' : ''}{slope.toFixed(4)}</span>;
             },
         },
         {
             header: 'Squeeze',
             accessorKey: 'squeeze',
             mobileLabel: 'Squeeze',
-            cell: (crypto) => {
-                const squeeze = crypto.squeeze;
+            cell: (coin) => {
+                const squeeze = coin.squeeze || 'No squeeze';
+                const active = squeeze === 'On';
                 return (
-                    <span className="text-main font-medium">
-                        {squeeze || '—'}
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${active ? 'bg-warning-main/20 text-warning-main' : 'text-muted'}`}>
+                        {squeeze}
                     </span>
                 );
             },
@@ -264,62 +236,139 @@ export function CryptoInstitutionalTable({ data, onRowClick }: CryptoInstitution
             header: 'Composite Rec.',
             accessorKey: 'recommendation',
             mobileLabel: 'Rec.',
-            cell: (crypto) => {
-                const colors = getRecommendationColor(crypto.recommendation || 'HOLD');
+            cell: (coin) => {
+                const colors = getRecommendationColor(coin.recommendation || 'Hold');
                 return (
-                    <span className={`${colors.badge} px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide`}>
-                        {crypto.recommendation || 'HOLD'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className={`${colors.badge} px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap`}>
+                            {coin.recommendation || 'Hold'}
+                        </span>
+                        <button
+                            onClick={(e) => toggleRow(coin.id, e)}
+                            className="p-1 hover:bg-surface-light rounded-full transition-colors"
+                        >
+                            {expandedRows[coin.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                    </div>
                 );
             },
         },
     ];
 
-    return (
-        <div className="space-y-6">
-            {/* Technical Indicators Summary */}
-            <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <h3 className="m3-title-large mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                            Technical Indicators Summary
-                        </h3>
-                        <p className="text-xs text-muted font-medium">
-                            Multi-timeframe price performance and technical analysis
+    const renderExpandedRow = (coin: CryptoData) => {
+        if (!expandedRows[coin.id]) return null;
+
+        const rsi = coin.rsi || 50;
+        const adx = coin.adx || 0;
+        const cmf = coin.cmf || 0;
+        const dist200 = coin.distance_from_200_ema || 0;
+        const macdSlope = coin.macd_slope || 0;
+
+        return (
+            <div className="col-span-full bg-surface-light/30 p-4 border-t border-white/5 animate-in fade-in slide-in-from-top-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Momentum</h4>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">RSI (14)</span>
+                            <span className={`font-mono font-bold ${rsi < 30 ? 'text-success-main' : rsi > 70 ? 'text-danger-main' : 'text-warning-main'}`}>
+                                {rsi.toFixed(1)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">MACD Slope</span>
+                            <span className={`font-mono font-bold ${macdSlope > 0 ? 'text-success-main' : 'text-danger-main'}`}>
+                                {macdSlope.toFixed(4)}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Trend Strength</h4>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">ADX (14)</span>
+                            <span className={`font-mono font-bold ${adx > 25 ? 'text-success-main' : 'text-muted'}`}>
+                                {adx.toFixed(1)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">vs 200 EMA</span>
+                            <span className={`font-mono font-bold ${dist200 > 0 ? 'text-success-main' : 'text-danger-main'}`}>
+                                {dist200.toFixed(1)}%
+                            </span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Volume & Volatility</h4>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">CMF (20)</span>
+                            <span className={`font-mono font-bold ${cmf > 0.05 ? 'text-success-main' : 'text-muted'}`}>
+                                {cmf.toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">Squeeze</span>
+                            <span className={`font-bold ${coin.squeeze === 'On' ? 'text-warning-main' : 'text-muted'}`}>
+                                {coin.squeeze || 'Off'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Score Breakdown</h4>
+                        <p className="text-xs text-muted leading-relaxed">
+                            Score: <span className="font-bold text-main">{coin.score?.toFixed(0)}/100</span>.
+                            {rsi < 30 ? ' Oversold (Bullish).' : rsi > 70 ? ' Overbought (Bearish).' : ' RSI Neutral.'}
+                            {adx > 25 ? ' Strong Trend.' : ' Weak Trend.'}
+                            {cmf > 0.05 ? ' High Buying Pressure.' : ''}
+                            {dist200 > 0 ? ' Above 200 EMA (Bullish).' : ' Below 200 EMA (Bearish).'}
                         </p>
                     </div>
                 </div>
             </div>
-            <ResponsiveTable data={data} columns={columns} onRowClick={onRowClick} />
+        );
+    };
+
+    return (
+        <div className="space-y-8">
+            {/* Technical Indicators Summary */}
+            <div className="space-y-4">
+                <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <Activity className="text-primary-main" size={24} />
+                        <div>
+                            <h3 className="m3-title-large mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                                Technical Indicators Summary
+                            </h3>
+                            <p className="text-xs text-muted font-medium">
+                                Real-time price action and key momentum indicators
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <ResponsiveTable data={data} columns={technicalColumns} onRowClick={onRowClick} />
+            </div>
 
             {/* Institutional-Grade Analysis */}
-            <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md mt-8">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <h3 className="m3-title-large mb-1 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                            Institutional-Grade Analysis
-                        </h3>
-                        <p className="text-xs text-muted font-medium">
-                            Advanced momentum and trend strength indicators
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs font-medium">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-success-main shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
-                            <span className="text-muted">Strong Signal</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-warning-main shadow-[0_0_8px_rgba(245,158,11,0.4)]"></div>
-                            <span className="text-muted">Neutral</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-danger-main shadow-[0_0_8px_rgba(239,68,68,0.4)]"></div>
-                            <span className="text-muted">Weak Signal</span>
+            <div className="space-y-4">
+                <div className="glass rounded-xl px-6 py-4 border border-white/10 shadow-sm bg-surface/40 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <BarChart2 className="text-secondary-main" size={24} />
+                        <div>
+                            <h3 className="m3-title-large mb-1 bg-gradient-to-r from-secondary-600 to-primary-600 bg-clip-text text-transparent">
+                                Institutional-Grade Analysis
+                            </h3>
+                            <p className="text-xs text-muted font-medium">
+                                Advanced metrics, trend strength, and composite scoring
+                            </p>
                         </div>
                     </div>
                 </div>
+                <ResponsiveTable
+                    data={data}
+                    columns={institutionalColumns}
+                    onRowClick={onRowClick}
+                    renderExpandedRow={renderExpandedRow}
+                />
             </div>
-            <ResponsiveTable data={data} columns={institutionalColumns} onRowClick={onRowClick} />
         </div>
     );
 }

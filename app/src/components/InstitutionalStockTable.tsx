@@ -54,7 +54,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 const roce = stock.roce || 0;
                 const emoji = getEmojiIndicator(roce, 15, 10, 'positive');
                 return (
-                    <span className="font-semibold text-main">
+                    <span className="font-semibold text-main whitespace-nowrap">
                         {emoji} {roce.toFixed(0)}%
                     </span>
                 );
@@ -68,7 +68,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 const epsGrowth = stock.eps_growth || 0;
                 const emoji = getEmojiIndicator(epsGrowth, 15, 10, 'positive');
                 return (
-                    <span className="font-semibold text-main">
+                    <span className="font-semibold text-main whitespace-nowrap">
                         {emoji} {epsGrowth.toFixed(0)}%
                     </span>
                 );
@@ -79,10 +79,10 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             accessorKey: 'fcf_yield',
             mobileLabel: 'FCF',
             cell: (stock) => {
-                const fcfYield = stock.fcf_yield || 0;
+                const fcfYield = (stock.fcf_yield || 0) * 100; // Convert to percentage if decimal
                 const emoji = getEmojiIndicator(fcfYield, 3, 1.5, 'positive');
                 return (
-                    <span className="font-semibold text-main">
+                    <span className="font-semibold text-main whitespace-nowrap">
                         {emoji} {fcfYield.toFixed(1)}%
                     </span>
                 );
@@ -91,13 +91,14 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
         {
             header: 'EV/EBITDA vs Sector',
             accessorKey: 'ev_vs_sector',
-            mobileLabel: 'EV/EBITDA',
+            mobileLabel: 'EV/Sec',
             cell: (stock) => {
-                const evVsSector = stock.ev_vs_sector || 0;
-                const emoji = getEmojiIndicator(evVsSector, -10, 0, 'negative');
+                const val = stock.ev_vs_sector || 0;
+                // Negative is good for valuation vs sector (undervalued)
+                const emoji = getEmojiIndicator(val, -5, 0, 'negative');
                 return (
-                    <span className="font-semibold text-main">
-                        {emoji} {evVsSector > 0 ? '+' : ''}{evVsSector.toFixed(0)}%
+                    <span className="font-semibold text-main whitespace-nowrap">
+                        {emoji} {val > 0 ? '+' : ''}{val.toFixed(0)}%
                     </span>
                 );
             },
@@ -110,7 +111,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 const return6m = stock.price_6m_return || 0;
                 const emoji = getEmojiIndicator(return6m, 10, 5, 'positive');
                 return (
-                    <span className="font-semibold text-main">
+                    <span className="font-semibold text-main whitespace-nowrap">
                         {emoji} {return6m > 0 ? '+' : ''}{return6m.toFixed(0)}%
                     </span>
                 );
@@ -124,7 +125,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 const debtEbitda = stock.debt_to_ebitda || 0;
                 const emoji = getEmojiIndicator(debtEbitda, 2, 3, 'negative');
                 return (
-                    <span className="font-semibold text-main">
+                    <span className="font-semibold text-main whitespace-nowrap">
                         {emoji} {debtEbitda.toFixed(1)}
                     </span>
                 );
@@ -137,9 +138,10 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             cell: (stock) => {
                 const quality = stock.earnings_quality || 'Medium';
                 const emoji = quality === 'High' ? '🟢' : quality === 'Medium' ? '🟡' : '🔴';
+                const val = quality === 'High' ? '1.1' : quality === 'Medium' ? '1.0' : '0.9';
                 return (
-                    <span className="font-semibold text-main">
-                        {emoji} {quality === 'High' ? '1.1' : quality === 'Medium' ? '1.0' : '0.9'}
+                    <span className="font-semibold text-main whitespace-nowrap">
+                        {emoji} {val}
                     </span>
                 );
             },
@@ -153,7 +155,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 const emoji = getEmojiIndicator(esgScore, 80, 60, 'positive');
                 const label = getESGLabel(esgScore);
                 return (
-                    <span className="font-semibold text-main">
+                    <span className="font-semibold text-main whitespace-nowrap">
                         {emoji} {label}
                     </span>
                 );
@@ -193,7 +195,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
             cell: (stock) => {
                 const colors = getRecommendationColor(stock.recommendation || 'Hold');
                 return (
-                    <span className={`${colors.badge} px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide`}>
+                    <span className={`${colors.badge} px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide whitespace-nowrap`}>
                         {stock.recommendation || 'Hold'}
                     </span>
                 );

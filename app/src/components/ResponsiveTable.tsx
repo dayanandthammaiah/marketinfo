@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -14,9 +14,10 @@ interface ResponsiveTableProps<T> {
     data: T[];
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
+    renderExpandedRow?: (item: T) => React.ReactNode;
 }
 
-export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTableProps<T>) {
+export function ResponsiveTable<T>({ data, columns, onRowClick, renderExpandedRow }: ResponsiveTableProps<T>) {
     const [sortKey, setSortKey] = useState<keyof T | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -82,31 +83,33 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                             {sortedData.map((item, rowIdx) => (
-                                <tr
-                                    key={rowIdx}
-                                    onClick={() => onRowClick?.(item)}
-                                    className={cn(
-                                        "group transition-all duration-300",
-                                        "hover:bg-gradient-to-r hover:from-primary-50/40 hover:via-secondary-50/30 hover:to-primary-50/40",
-                                        "dark:hover:from-primary-900/20 dark:hover:via-secondary-900/15 dark:hover:to-primary-900/20",
-                                        "hover:shadow-md hover:scale-[1.002]",
-                                        rowIdx % 2 === 0 ? "bg-white dark:bg-gray-900/50" : "bg-gray-50/50 dark:bg-gray-800/30",
-                                        onRowClick && "cursor-pointer"
-                                    )}
-                                >
-                                    {columns.map((col, colIdx) => (
-                                        <td
-                                            key={colIdx}
-                                            className={cn(
-                                                "px-6 py-4 whitespace-nowrap",
-                                                col.className,
-                                                colIdx === 0 && "sticky left-0 z-10 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] font-medium text-gray-900 dark:text-white"
-                                            )}
-                                        >
-                                            {renderCellValue(col, item)}
-                                        </td>
-                                    ))}
-                                </tr>
+                                <React.Fragment key={rowIdx}>
+                                    <tr
+                                        onClick={() => onRowClick?.(item)}
+                                        className={cn(
+                                            "group transition-all duration-300",
+                                            "hover:bg-gradient-to-r hover:from-primary-50/40 hover:via-secondary-50/30 hover:to-primary-50/40",
+                                            "dark:hover:from-primary-900/20 dark:hover:via-secondary-900/15 dark:hover:to-primary-900/20",
+                                            "hover:shadow-md hover:scale-[1.002]",
+                                            rowIdx % 2 === 0 ? "bg-white dark:bg-gray-900/50" : "bg-gray-50/50 dark:bg-gray-800/30",
+                                            onRowClick && "cursor-pointer"
+                                        )}
+                                    >
+                                        {columns.map((col, colIdx) => (
+                                            <td
+                                                key={colIdx}
+                                                className={cn(
+                                                    "px-6 py-4 whitespace-nowrap",
+                                                    col.className,
+                                                    colIdx === 0 && "sticky left-0 z-10 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] font-medium text-gray-900 dark:text-white"
+                                                )}
+                                            >
+                                                {renderCellValue(col, item)}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    {renderExpandedRow && renderExpandedRow(item)}
+                                </React.Fragment>
                             ))}
                         </tbody>
                     </table>
