@@ -185,7 +185,7 @@ export const TechnicalAnalysis = {
     const dxValues: number[] = [];
 
     // Align indices
-    const offset = period;
+    // Align indices
 
     for (let i = 0; i < trSmooth.length; i++) {
       const diPlus = (dmPlusSmooth[i] / trSmooth[i]) * 100;
