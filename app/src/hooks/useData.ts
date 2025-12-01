@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AppData } from '../types/index';
 import { MarketDataService } from '../services/MarketDataService';
 
-const CACHE_KEY = 'marketdata_cache_v2';
+const CACHE_KEY = 'marketdata_cache_v3';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 interface CachedData {

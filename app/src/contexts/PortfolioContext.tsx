@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { Preferences } from '@capacitor/preferences';
 
 const PORTFOLIO_KEY = 'investiq_portfolio';

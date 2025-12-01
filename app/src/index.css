@@ -102,36 +102,6 @@
   --bg-surface: var(--surface-1);
   --bg-surface-2: var(--surface-2);
 
-  --primary-50: #002e22;
-  --primary-100: #004c3d;
-  --primary-500: var(--md-sys-color-primary);
-  --primary-600: #46ce96;
-}
-
-@layer base {
-  body {
-    @apply bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-300;
-    font-family: 'Roboto', 'Inter', sans-serif;
-  }
-}
-
-@layer components {
-
-  /* Material 3 Card */
-  .md3-card {
-    @apply bg-[var(--surface-1)] rounded-2xl p-4 transition-all duration-300 border border-[var(--md-sys-color-outline-variant)]/20;
-    box-shadow: var(--elevation-1);
-  }
-
-  .md3-card:hover {
-    @apply bg-[var(--surface-2)] -translate-y-0.5;
-    box-shadow: var(--elevation-2);
-  }
-
-  .md3-card-elevated {
-    @apply bg-[var(--surface-2)] rounded-2xl p-4;
-    box-shadow: var(--elevation-2);
-  }
 
   /* Material 3 Typography */
   .m3-display-large {
