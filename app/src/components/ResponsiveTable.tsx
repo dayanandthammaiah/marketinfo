@@ -50,13 +50,13 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
 
     return (
         <>
-            {/* Desktop Table View - Full Horizontal Scroll Support */}
-            <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-                {/* Horizontal scroll wrapper with mobile optimization */}
-                <div className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500 dark:hover:scrollbar-thumb-gray-500">
-                    <table className="w-full border-collapse text-sm text-left min-w-[800px]">
-                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium sticky top-0 z-20">
-                            <tr>
+            {/* Desktop Table View - Full Horizontal & Vertical Scroll Support */}
+            <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+                {/* Scroll wrapper with both horizontal and vertical scrolling */}
+                <div className="overflow-auto max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500 dark:hover:scrollbar-thumb-gray-500">
+                    <table className="w-full border-collapse text-sm text-left min-w-[1200px]">
+                        <thead className="bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-800/80 dark:to-gray-800 text-gray-700 dark:text-gray-300 font-bold sticky top-0 z-20 shadow-lg border-b-2 border-primary-500/20">
+                            <tr className="divide-x divide-gray-200 dark:divide-gray-700">
                                 {columns.map((col, i) => (
                                     <th
                                         key={i}
@@ -86,7 +86,11 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
                                     key={rowIdx}
                                     onClick={() => onRowClick?.(item)}
                                     className={cn(
-                                        "group transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                                        "group transition-all duration-300",
+                                        "hover:bg-gradient-to-r hover:from-primary-50/40 hover:via-secondary-50/30 hover:to-primary-50/40",
+                                        "dark:hover:from-primary-900/20 dark:hover:via-secondary-900/15 dark:hover:to-primary-900/20",
+                                        "hover:shadow-md hover:scale-[1.002]",
+                                        rowIdx % 2 === 0 ? "bg-white dark:bg-gray-900/50" : "bg-gray-50/50 dark:bg-gray-800/30",
                                         onRowClick && "cursor-pointer"
                                     )}
                                 >

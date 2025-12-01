@@ -1,9 +1,12 @@
 name: Deploy PWA to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only - requires Pages to be enabled first
+  # Automatic deployment disabled to prevent errors if Pages not enabled
+  # To enable: Go to Settings → Pages → Source: GitHub Actions
+  # Then uncomment below:
+  # push:
+  #   branches: [ main ]
 
 permissions:
   contents: read

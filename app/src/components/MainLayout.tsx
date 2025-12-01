@@ -151,23 +151,39 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                         </div>
                     </div>
 
-                    {/* Desktop Navigation Tabs - Material 3 Centered Fixed Layout */}
-                    <nav className="hidden md:flex items-center justify-center gap-0 border-t border-white/10">
+                    {/* Desktop Navigation Tabs - Modern Material 3 Design */}
+                    <nav className="hidden md:flex items-center justify-center gap-2 border-t border-white/10 px-4 bg-gradient-to-b from-surface/50 to-surface/0 backdrop-blur-sm">
                         {mainTabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={cn(
-                                    "relative flex-1 max-w-[200px] px-6 py-3.5 font-semibold transition-all duration-300 flex items-center justify-center gap-2.5 text-sm whitespace-nowrap border-b-[3px]",
+                                    "group relative flex-1 max-w-[200px] px-8 py-4 font-bold transition-all duration-300 flex items-center justify-center gap-3 text-base whitespace-nowrap rounded-t-2xl",
                                     activeTab === tab.id
-                                        ? "border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10"
-                                        : "border-transparent text-muted hover:text-main hover:bg-surface-2 dark:hover:bg-gray-800/50"
+                                        ? "text-white bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-600 shadow-2xl shadow-primary-500/50 scale-105"
+                                        : "text-muted hover:text-main hover:bg-gradient-to-br hover:from-surface-2/80 hover:to-surface-2/40 hover:shadow-lg backdrop-blur-sm border-2 border-transparent hover:border-white/10"
                                 )}
                             >
-                                <tab.icon size={18} className={cn("transition-all", activeTab === tab.id ? "opacity-100 scale-110" : "opacity-70")} />
-                                <span className="font-medium">{tab.label}</span>
+                                <tab.icon 
+                                    size={22} 
+                                    className={cn(
+                                        "transition-all duration-300",
+                                        activeTab === tab.id 
+                                            ? "opacity-100 scale-110 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" 
+                                            : "opacity-70 group-hover:opacity-100 group-hover:scale-105"
+                                    )} 
+                                />
+                                <span className={cn(
+                                    "font-bold tracking-wide",
+                                    activeTab === tab.id && "drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
+                                )}>
+                                    {tab.label}
+                                </span>
                                 {activeTab === tab.id && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary-500 to-secondary-500 rounded-t-full" />
+                                    <>
+                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-white/40 via-white/80 to-white/40 rounded-t-full" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent rounded-t-2xl" />
+                                    </>
                                 )}
                             </button>
                         ))}

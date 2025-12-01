@@ -124,9 +124,9 @@ function App() {
           const matchesCategory = newsCategory === 'All' || n.category === newsCategory;
           const matchesSearch = !newsSearch || n.title.toLowerCase().includes(newsSearch.toLowerCase());
           return matchesCategory && matchesSearch;
-        });
+        }) || [];
 
-        return filteredNews ? (
+        return (
           <div className="space-y-6 pb-20">
             <div className="glass rounded-xl px-6 py-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -153,15 +153,35 @@ function App() {
             />
             <div className="-mx-4 md:mx-0">
               <PullToRefresh onRefresh={refresh} containerSelector="#app-main-scroll">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
-                  {filteredNews.map((item, i) => (
-                    <NewsCard key={i} item={item} />
-                  ))}
-                </div>
+                {filteredNews.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
+                    {filteredNews.map((item, i) => (
+                      <NewsCard key={`${item.link}-${i}`} item={item} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 px-4">
+                    <div className="text-center max-w-md">
+                      <div className="text-6xl mb-4">📰</div>
+                      <h3 className="text-2xl font-bold mb-2 text-gray-700 dark:text-gray-300">No News Found</h3>
+                      <p className="text-gray-500 dark:text-gray-400 mb-6">
+                        {newsSearch || newsCategory !== 'All' 
+                          ? "Try adjusting your filters or search query"
+                          : "News data is loading or unavailable"}
+                      </p>
+                      <button
+                        onClick={refresh}
+                        className="px-6 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
+                      >
+                        Refresh News
+                      </button>
+                    </div>
+                  </div>
+                )}
               </PullToRefresh>
             </div>
           </div>
-        ) : null;
+        );
 
       case 'favorites':
         return <FavoritesTab data={data} onStockClick={setSelectedStock} />;
