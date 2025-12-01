@@ -241,89 +241,9 @@ jobs:
       env:
         EMAIL_USER: ${{ secrets.EMAIL_USER }}
         GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        DATE: $(date +'%Y-%m-%d')
       run: |
-        python -c "
-        import json
-        import os
-        import math
-        from datetime import datetime
-        from analysis.metrics import score_stock
-
-        # Helper function to sanitize data
-        def sanitize_for_json(obj):
-            if isinstance(obj, dict):
-                return {k: sanitize_for_json(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [sanitize_for_json(item) for item in obj]
-            elif isinstance(obj, float):
-                if math.isnan(obj) or math.isinf(obj):
-                    return None
-                return obj
-            return obj
-
-        # Load all India batches
-        nifty_data = {}
-        for i in range(1, 6):
-            with open(f'./data/india_batch_{i}.json', 'r') as f:
-                batch = json.load(f)
-                nifty_data.update(batch)
-
-        # Load US stocks
-        with open('./data/us_stocks.json', 'r') as f:
-            us_data = json.load(f)
-
-        # Load crypto
-        with open('./data/crypto_data.json', 'r') as f:
-            crypto_data = json.load(f)
-
-        # Load news
-        with open('./data/news_data.json', 'r') as f:
-            news_data = json.load(f)
-
-        # Analyze & Score Nifty stocks
-        analyzed_nifty = []
-        for ticker, data in nifty_data.items():
-            score, rec, reasons = score_stock(data)
-            data['score'] = score
-            data['recommendation'] = rec
-            data['reasons'] = reasons
-            analyzed_nifty.append(data)
-        analyzed_nifty.sort(key=lambda x: x['score'], reverse=True)
-
-        # Analyze & Score US stocks
-        analyzed_us = []
-        for ticker, data in us_data.items():
-            score, rec, reasons = score_stock(data)
-            data['score'] = score
-            data['recommendation'] = rec
-            data['reasons'] = reasons
-            analyzed_us.append(data)
-        analyzed_us.sort(key=lambda x: x['score'], reverse=True)
-
-        # Generate JSON for App
-        app_data = {
-            'last_updated': datetime.now().isoformat(),
-            'nifty_50': analyzed_nifty,
-            'us_stocks': analyzed_us,
-            'crypto': crypto_data,
-            'news': news_data
-        }
-
-        # Sanitize data
-        app_data = sanitize_for_json(app_data)
-
-        # Save JSON
-        os.makedirs('app/public', exist_ok=True)
-        with open('app/public/latest_data.json', 'w') as f:
-            json.dump(app_data, f, indent=2)
-
-        print(f'Data saved to app/public/latest_data.json')
-        print(f'  - {len(analyzed_nifty)} India stocks')
-        print(f'  - {len(analyzed_us)} US stocks')
-        print(f'  - {len(crypto_data)} crypto assets')
-        print(f'  - {len(news_data)} news articles')
-        "
+        cd scripts
+        python main_optimized.py
 
     - name: Generate & Send Email Report
       env:
@@ -331,19 +251,42 @@ jobs:
         GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       continue-on-error: true
       run: |
+        cd scripts
         python -c "
         import json
-        from analysis.report import generate_html_report
-        from send_email import send_email
+        import sys
+        import os
+        sys.path.insert(0, '.')
         
-        with open('app/public/latest_data.json', 'r') as f:
-            app_data = json.load(f)
-        
-        html = generate_html_report(app_data)
-        send_email(html)
-        print('Email report sent successfully')
+        try:
+            from analysis.report import generate_html_report
+            from send_email import send_email
+            
+            with open('../app/public/latest_data.json', 'r') as f:
+                app_data = json.load(f)
+            
+            html = generate_html_report(app_data)
+            send_email(html)
+            print('Email report sent successfully')
+        except ImportError as e:
+            print(f'Email sending skipped (modules not available): {e}')
+        except Exception as e:
+            print(f'Email sending failed: {e}')
         "
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+    
+    - name: Build Web App
+      working-directory: ./app
+      run: |
+        npm ci
+        npm run build
+    
     - name: Set up Java 17
       uses: actions/setup-java@v4
       with:
@@ -352,12 +295,6 @@ jobs:
     
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-    
-    - name: Build Web App
-      working-directory: ./app
-      run: |
-        npm ci
-        npm run build
     
     - name: Build Android APK (Debug)
       working-directory: ./app

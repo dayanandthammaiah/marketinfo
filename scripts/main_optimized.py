@@ -24,7 +24,52 @@ except ImportError:
     from fetchers.crypto import fetch_crypto_data
     from fetchers.news import fetch_news
     logger.warning("Using fallback fetchers - enhanced modules not found")
-from analysis.metrics import score_stock
+
+try:
+    from analysis.metrics import score_stock
+except ImportError:
+    # Fallback scoring function if analysis module not available
+    logger.warning("Analysis module not found, using default scoring")
+    def score_stock(data):
+        """Default scoring function"""
+        # Simple scoring based on available metrics
+        score = 50  # Base score
+        roce = data.get('roce', 0)
+        eps_growth = data.get('eps_growth', 0)
+        debt_eq = data.get('debt_to_equity', 1)
+        
+        if roce > 20:
+            score += 20
+        elif roce > 15:
+            score += 10
+        
+        if eps_growth > 15:
+            score += 20
+        elif eps_growth > 10:
+            score += 10
+        
+        if debt_eq < 0.5:
+            score += 10
+        
+        # Determine recommendation
+        if score >= 80:
+            rec = "Strong Buy"
+        elif score >= 60:
+            rec = "Buy"
+        elif score >= 40:
+            rec = "Hold"
+        else:
+            rec = "Sell"
+        
+        reasons = []
+        if roce > 15:
+            reasons.append("Good ROCE")
+        if eps_growth > 10:
+            reasons.append("Strong EPS Growth")
+        if debt_eq < 0.5:
+            reasons.append("Low Debt")
+        
+        return score, rec, reasons
 
 # Configure logging
 logging.basicConfig(
