@@ -151,21 +151,24 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                         </div>
                     </div>
 
-                    {/* Desktop Navigation Tabs */}
-                    <nav className="hidden md:flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 border-t border-white/10 pt-0">
+                    {/* Desktop Navigation Tabs - Material 3 Centered Fixed Layout */}
+                    <nav className="hidden md:flex items-center justify-center gap-0 border-t border-white/10">
                         {mainTabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={cn(
-                                    "relative px-4 py-3 font-semibold transition-all duration-300 flex items-center gap-2 text-sm whitespace-nowrap border-b-2",
+                                    "relative flex-1 max-w-[200px] px-6 py-3.5 font-semibold transition-all duration-300 flex items-center justify-center gap-2.5 text-sm whitespace-nowrap border-b-[3px]",
                                     activeTab === tab.id
-                                        ? "border-primary-500 text-primary-600 dark:text-primary-400"
-                                        : "border-transparent text-muted hover:text-main hover:border-gray-300 dark:hover:border-gray-700"
+                                        ? "border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10"
+                                        : "border-transparent text-muted hover:text-main hover:bg-surface-2 dark:hover:bg-gray-800/50"
                                 )}
                             >
-                                <tab.icon size={16} className={cn("transition-opacity", activeTab === tab.id ? "opacity-100" : "opacity-70")} />
-                                <span>{tab.label}</span>
+                                <tab.icon size={18} className={cn("transition-all", activeTab === tab.id ? "opacity-100 scale-110" : "opacity-70")} />
+                                <span className="font-medium">{tab.label}</span>
+                                {activeTab === tab.id && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary-500 to-secondary-500 rounded-t-full" />
+                                )}
                             </button>
                         ))}
                     </nav>

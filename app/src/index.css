@@ -46,16 +46,16 @@
   /* Groww Red */
   --danger-dark: #b91c1c;
 
-  /* Light Mode Base */
-  --bg-app: #ffffff;
+  /* Light Mode Base - High Contrast for Readability */
+  --bg-app: #f8f9fa;
   --bg-surface: #ffffff;
-  --bg-surface-2: #f5f7f8;
+  --bg-surface-2: #f1f3f5;
   /* Very light gray */
-  --text-main: #1e2226;
-  /* Almost black */
-  --text-muted: #7c8691;
-  /* Cool gray */
-  --border-subtle: #eef0f3;
+  --text-main: #1a1a1a;
+  /* Almost black - higher contrast */
+  --text-muted: #666666;
+  /* Darker gray for better readability */
+  --border-subtle: #e0e0e0;
 
   /* Glass Effect Variables */
   --glass-bg: rgba(255, 255, 255, 0.9);
@@ -82,9 +82,13 @@
 }
 
 /* Global Reset & Base */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Color utility classes bound to CSS variables */
-.text-main { color: var(--text-main); }
-.text-muted { color: var(--text-muted); }
+.text-main { color: var(--text-main) !important; }
+.text-muted { color: var(--text-muted) !important; }
 .bg-app { background-color: var(--bg-app); }
 .bg-surface { background-color: var(--bg-surface); }
 .bg-surface-2 { background-color: var(--bg-surface-2); }
@@ -118,10 +122,26 @@ body {
   overflow-x: hidden;
 }
 
-/* Premium Scrollbar */
+/* Premium Scrollbar - Enhanced for Tables */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface-2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-500);
+  opacity: 0.8;
 }
 
 ::-webkit-scrollbar-track {
@@ -282,4 +302,66 @@ th {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Mobile touch scrolling optimization */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Ensure table content is visible on mobile */
+@media (max-width: 768px) {
+  table {
+    display: table;
+    width: 100%;
+    table-layout: auto;
+  }
+  
+  th, td {
+    white-space: nowrap;
+    min-width: fit-content;
+  }
+  
+  /* Make scrollbar more visible on mobile */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 12px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--primary-500);
+    opacity: 0.7;
+  }
+}
+
+/* Force proper text color in light mode */
+.dark .text-main {
+  color: #f5f5f5 !important;
+}
+
+:root:not(.dark) .text-main {
+  color: #1a1a1a !important;
+}
+
+:root:not(.dark) .text-muted {
+  color: #666666 !important;
+}
+
+/* Ensure cards and tables have proper contrast */
+:root:not(.dark) .bg-white {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+}
+
+:root:not(.dark) .bg-gray-50 {
+  background-color: #f9fafb !important;
+  color: #1a1a1a !important;
+}
+
+:root:not(.dark) .text-gray-900 {
+  color: #1a1a1a !important;
+}
+
+:root:not(.dark) .text-gray-500 {
+  color: #6b7280 !important;
 }

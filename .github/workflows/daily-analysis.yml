@@ -1,4 +1,4 @@
-name: Daily Institutional Analysis (Optimized)
+name: Daily Institutional Analysis (Ultra-Fast)
 
 on:
   push:
@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '30 0 * * *' # 6:00 AM IST (00:30 UTC)
   workflow_dispatch:
+
+# Optimize concurrency
+concurrency:
+  group: market-data-generation
+  cancel-in-progress: true
 
 jobs:
   # Job 1: Fetch India Stocks (parallelized in batches)
@@ -339,10 +344,35 @@ jobs:
         print('Email report sent successfully')
         "
 
+    - name: Set up Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Build Web App
+      working-directory: ./app
+      run: |
+        npm ci
+        npm run build
+    
+    - name: Build Android APK (Debug)
+      working-directory: ./app
+      run: |
+        npx cap sync android
+        cd android
+        chmod +x ./gradlew
+        ./gradlew assembleDebug --no-daemon --stacktrace
+    
     - name: Upload Final Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: daily-report
+        name: daily-report-with-apk
         path: |
           app/public/latest_data.json
           scripts/templates/email_report.html
+          app/android/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30

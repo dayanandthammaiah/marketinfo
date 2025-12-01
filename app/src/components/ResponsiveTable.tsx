@@ -50,11 +50,11 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
 
     return (
         <>
-            {/* Desktop Table View */}
-            <div className="hidden md:block w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-                {/* Horizontal scroll only; let main page handle vertical scroll */}
-                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
-                    <table className="w-full border-collapse text-sm text-left">
+            {/* Desktop Table View - Full Horizontal Scroll Support */}
+            <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                {/* Horizontal scroll wrapper with mobile optimization */}
+                <div className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500 dark:hover:scrollbar-thumb-gray-500">
+                    <table className="w-full border-collapse text-sm text-left min-w-[800px]">
                         <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium sticky top-0 z-20">
                             <tr>
                                 {columns.map((col, i) => (
@@ -109,8 +109,8 @@ export function ResponsiveTable<T>({ data, columns, onRowClick }: ResponsiveTabl
                 </div>
             </div>
 
-            {/* Mobile Card View (Groww Style) */}
-            <div className="md:hidden space-y-3">
+            {/* Mobile Card View (Groww Style) - Full width with scroll */}
+            <div className="md:hidden space-y-3 w-full">
                 {sortedData.map((item, idx) => (
                     <div
                         key={idx}

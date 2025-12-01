@@ -100,21 +100,21 @@ function App() {
     switch (activeTab) {
       case 'india':
         return filteredData?.nifty ? (
-          <div className="w-full overflow-auto">
+          <div className="w-full">
             <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
           </div>
         ) : null;
 
       case 'us':
         return filteredData?.us ? (
-          <div className="w-full overflow-auto">
+          <div className="w-full">
             <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
           </div>
         ) : null;
 
       case 'crypto':
         return filteredData?.crypto ? (
-          <div className="w-full overflow-auto">
+          <div className="w-full">
             <CryptoInstitutionalTable data={filteredData.crypto} onRowClick={setSelectedCrypto} />
           </div>
         ) : null;
