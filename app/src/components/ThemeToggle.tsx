@@ -85,7 +85,7 @@ export function ThemeToggle() {
                     animate={{ scale: 1, rotate: 0 }}
                     exit={{ scale: 0, rotate: 180 }}
                     transition={{
-                        duration: 0.3,
+                        duration: 0.15,
                         ease: [0.3, 0.0, 0, 1.0],
                     }}
                     className="flex items-center justify-center"

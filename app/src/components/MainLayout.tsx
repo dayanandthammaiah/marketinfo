@@ -4,6 +4,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tabTransition } from '../utils/animations';
+import { useSafeArea } from '../hooks/useSafeArea';
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -36,6 +37,7 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     const [hiddenHeader, setHiddenHeader] = useState(false);
     const [lastScrollTop, setLastScrollTop] = useState(0);
     const [isScrolled, setIsScrolled] = useState(false);
+    const safeArea = useSafeArea();
 
     useEffect(() => {
         const el = document.getElementById('app-main-scroll');
@@ -254,7 +256,7 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
             {/* Mobile Bottom Navigation */}
             <motion.div
                 className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[var(--md-sys-color-outline-variant)]/20 z-50 elevation-3"
-                style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
+                style={{ paddingBottom: `${Math.max(safeArea.bottom, 8)}px` }}
                 initial={{ y: 100 }}
                 animate={{ y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
