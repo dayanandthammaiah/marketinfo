@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useData } from './hooks/useData';
+import { useAutoRefresh } from './hooks/useAutoRefresh';
 import { MainLayout } from './components/MainLayout';
 import { InstitutionalStockTable } from './components/InstitutionalStockTable';
 import { CryptoInstitutionalTable } from './components/CryptoInstitutionalTable';
@@ -54,6 +55,14 @@ function AppContent() {
       updatePrices(allPrices);
     }
   }, [data, checkAlerts, updatePrices]);
+
+  // Auto-refresh market data every 60 seconds when tab is visible
+  useAutoRefresh({
+    enabled: ['india', 'us', 'crypto'].includes(activeTab),
+    interval: 60000, // 60 seconds
+    onRefresh: refresh,
+    tabVisible: activeTab === 'india' || activeTab === 'us' || activeTab === 'crypto',
+  });
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-md-background">

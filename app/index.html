@@ -1,37 +1,40 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#111827" />
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>InvestIQ</title>
-    <script>
-      (function() {
-        try {
-          const localTheme = localStorage.getItem('app-theme');
-          const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (localTheme === 'dark' || (!localTheme && supportDarkMode)) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-        } catch (e) {
-          console.error('Theme script error:', e);
+
+<head>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#111827" />
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>InvestIQ</title>
+  <script>
+    (function () {
+      try {
+        const localTheme = localStorage.getItem('app-theme');
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (localTheme === 'dark' || (!localTheme && supportDarkMode)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
         }
-      })();
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch((e) => console.error('SW registration failed', e));
-        });
+      } catch (e) {
+        console.error('Theme script error:', e);
       }
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((e) => console.error('SW registration failed', e));
+      });
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
