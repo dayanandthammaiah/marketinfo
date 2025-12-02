@@ -17,8 +17,6 @@ export function ThemeToggle() {
         return 'light';
     });
 
-    const [isTransitioning, setIsTransitioning] = useState(false);
-
     // Sync with Capacitor Preferences on mount
     useEffect(() => {
         const syncPreferences = async () => {
@@ -64,22 +62,18 @@ export function ThemeToggle() {
     }, [theme]);
 
     const toggleTheme = () => {
-        setIsTransitioning(true);
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
         // Add haptic feedback on mobile if available
         if ('vibrate' in navigator) {
             navigator.vibrate(10);
         }
-
-        setTimeout(() => setIsTransitioning(false), 300);
     };
 
     return (
         <motion.button
             onClick={toggleTheme}
-            disabled={isTransitioning}
-            className="relative p-3 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-3)] active:scale-95 transition-all duration-200 disabled:opacity-50 elevation-1 hover:elevation-2"
+            className="relative p-3 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-3)] active:scale-95 transition-all duration-200 elevation-1 hover:elevation-2"
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

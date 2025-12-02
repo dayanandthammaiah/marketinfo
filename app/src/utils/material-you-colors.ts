@@ -134,67 +134,78 @@ export function supportsDynamicColors(): boolean {
 
 /**
  * Apply Material You dynamic colors if supported, otherwise use fallback palette
+ * Optimized to batch all CSS updates in a single operation for better performance
  */
 export function applyMaterialYouColors(isDark: boolean): void {
-    const root = document.documentElement;
     const palette = isDark ? darkPalette : lightPalette;
     const semanticColors = isDark ? darkSemanticColors : lightSemanticColors;
 
-    // Apply primary colors
-    root.style.setProperty('--md-sys-color-primary', palette.primary);
-    root.style.setProperty('--md-sys-color-on-primary', palette.onPrimary);
-    root.style.setProperty('--md-sys-color-primary-container', palette.primaryContainer);
-    root.style.setProperty('--md-sys-color-on-primary-container', palette.onPrimaryContainer);
+    // Build all CSS variable updates in a single string to avoid layout thrashing
+    const cssUpdates: string[] = [];
 
-    // Apply secondary colors
-    root.style.setProperty('--md-sys-color-secondary', palette.secondary);
-    root.style.setProperty('--md-sys-color-on-secondary', palette.onSecondary);
-    root.style.setProperty('--md-sys-color-secondary-container', palette.secondaryContainer);
-    root.style.setProperty('--md-sys-color-on-secondary-container', palette.onSecondaryContainer);
+    // Primary colors
+    cssUpdates.push(`--md-sys-color-primary: ${palette.primary}`);
+    cssUpdates.push(`--md-sys-color-on-primary: ${palette.onPrimary}`);
+    cssUpdates.push(`--md-sys-color-primary-container: ${palette.primaryContainer}`);
+    cssUpdates.push(`--md-sys-color-on-primary-container: ${palette.onPrimaryContainer}`);
 
-    // Apply tertiary colors
-    root.style.setProperty('--md-sys-color-tertiary', palette.tertiary);
-    root.style.setProperty('--md-sys-color-on-tertiary', palette.onTertiary);
-    root.style.setProperty('--md-sys-color-tertiary-container', palette.tertiaryContainer);
-    root.style.setProperty('--md-sys-color-on-tertiary-container', palette.onTertiaryContainer);
+    // Secondary colors
+    cssUpdates.push(`--md-sys-color-secondary: ${palette.secondary}`);
+    cssUpdates.push(`--md-sys-color-on-secondary: ${palette.onSecondary}`);
+    cssUpdates.push(`--md-sys-color-secondary-container: ${palette.secondaryContainer}`);
+    cssUpdates.push(`--md-sys-color-on-secondary-container: ${palette.onSecondaryContainer}`);
 
-    // Apply surface colors
-    root.style.setProperty('--md-sys-color-surface', palette.surface);
-    root.style.setProperty('--md-sys-color-on-surface', palette.onSurface);
-    root.style.setProperty('--md-sys-color-surface-variant', palette.surfaceVariant);
-    root.style.setProperty('--md-sys-color-on-surface-variant', palette.onSurfaceVariant);
+    // Tertiary colors
+    cssUpdates.push(`--md-sys-color-tertiary: ${palette.tertiary}`);
+    cssUpdates.push(`--md-sys-color-on-tertiary: ${palette.onTertiary}`);
+    cssUpdates.push(`--md-sys-color-tertiary-container: ${palette.tertiaryContainer}`);
+    cssUpdates.push(`--md-sys-color-on-tertiary-container: ${palette.onTertiaryContainer}`);
 
-    // Apply background colors
-    root.style.setProperty('--md-sys-color-background', palette.background);
-    root.style.setProperty('--md-sys-color-on-background', palette.onBackground);
+    // Surface colors
+    cssUpdates.push(`--md-sys-color-surface: ${palette.surface}`);
+    cssUpdates.push(`--md-sys-color-on-surface: ${palette.onSurface}`);
+    cssUpdates.push(`--md-sys-color-surface-variant: ${palette.surfaceVariant}`);
+    cssUpdates.push(`--md-sys-color-on-surface-variant: ${palette.onSurfaceVariant}`);
 
-    // Apply outline colors
-    root.style.setProperty('--md-sys-color-outline', palette.outline);
-    root.style.setProperty('--md-sys-color-outline-variant', palette.outlineVariant);
+    // Background colors
+    cssUpdates.push(`--md-sys-color-background: ${palette.background}`);
+    cssUpdates.push(`--md-sys-color-on-background: ${palette.onBackground}`);
 
-    // Apply surface tones for dark mode elevation
+    // Outline colors
+    cssUpdates.push(`--md-sys-color-outline: ${palette.outline}`);
+    cssUpdates.push(`--md-sys-color-outline-variant: ${palette.outlineVariant}`);
+
+    // Surface tones
     if (isDark) {
-        root.style.setProperty('--surface-0', darkSurfaceTones.surface0);
-        root.style.setProperty('--surface-1', darkSurfaceTones.surface1);
-        root.style.setProperty('--surface-2', darkSurfaceTones.surface2);
-        root.style.setProperty('--surface-3', darkSurfaceTones.surface3);
-        root.style.setProperty('--surface-4', darkSurfaceTones.surface4);
-        root.style.setProperty('--surface-5', darkSurfaceTones.surface5);
+        cssUpdates.push(`--surface-0: ${darkSurfaceTones.surface0}`);
+        cssUpdates.push(`--surface-1: ${darkSurfaceTones.surface1}`);
+        cssUpdates.push(`--surface-2: ${darkSurfaceTones.surface2}`);
+        cssUpdates.push(`--surface-3: ${darkSurfaceTones.surface3}`);
+        cssUpdates.push(`--surface-4: ${darkSurfaceTones.surface4}`);
+        cssUpdates.push(`--surface-5: ${darkSurfaceTones.surface5}`);
     } else {
-        // Light mode surface tones (slightly darker as elevation increases)
-        root.style.setProperty('--surface-0', palette.surface);
-        root.style.setProperty('--surface-1', '#F4F6F4');
-        root.style.setProperty('--surface-2', '#EFF2EF');
-        root.style.setProperty('--surface-3', '#E9EFEC');
-        root.style.setProperty('--surface-4', '#E4E9E6');
-        root.style.setProperty('--surface-5', '#DFE4E1');
+        cssUpdates.push(`--surface-0: ${palette.surface}`);
+        cssUpdates.push(`--surface-1: #F4F6F4`);
+        cssUpdates.push(`--surface-2: #EFF2EF`);
+        cssUpdates.push(`--surface-3: #E9EFEC`);
+        cssUpdates.push(`--surface-4: #E4E9E6`);
+        cssUpdates.push(`--surface-5: #DFE4E1`);
     }
 
-    // Apply semantic colors
-    root.style.setProperty('--color-success', semanticColors.success);
-    root.style.setProperty('--color-warning', semanticColors.warning);
-    root.style.setProperty('--color-error', semanticColors.error);
-    root.style.setProperty('--color-info', semanticColors.info);
+    // Semantic colors
+    cssUpdates.push(`--color-success: ${semanticColors.success}`);
+    cssUpdates.push(`--color-warning: ${semanticColors.warning}`);
+    cssUpdates.push(`--color-error: ${semanticColors.error}`);
+    cssUpdates.push(`--color-info: ${semanticColors.info}`);
+
+    // Apply all updates at once using requestAnimationFrame to prevent forced reflows
+    requestAnimationFrame(() => {
+        const root = document.documentElement;
+        cssUpdates.forEach(update => {
+            const [property, value] = update.split(': ');
+            root.style.setProperty(property, value);
+        });
+    });
 }
 
 /**

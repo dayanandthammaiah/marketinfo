@@ -103,23 +103,29 @@ function AppContent() {
     switch (activeTab) {
       case 'india':
         return filteredData?.nifty ? (
-          <div className="w-full">
-            <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
-          </div>
+          <PullToRefresh onRefresh={refresh} containerSelector="#app-main-scroll">
+            <div className="w-full">
+              <InstitutionalStockTable data={filteredData.nifty} onRowClick={setSelectedStock} />
+            </div>
+          </PullToRefresh>
         ) : null;
 
       case 'us':
         return filteredData?.us ? (
-          <div className="w-full">
-            <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
-          </div>
+          <PullToRefresh onRefresh={refresh} containerSelector="#app-main-scroll">
+            <div className="w-full">
+              <InstitutionalStockTable data={filteredData.us} onRowClick={setSelectedStock} />
+            </div>
+          </PullToRefresh>
         ) : null;
 
       case 'crypto':
         return filteredData?.crypto ? (
-          <div className="w-full">
-            <CryptoInstitutionalTable data={filteredData.crypto} onRowClick={setSelectedCrypto} />
-          </div>
+          <PullToRefresh onRefresh={refresh} containerSelector="#app-main-scroll">
+            <div className="w-full">
+              <CryptoInstitutionalTable data={filteredData.crypto} onRowClick={setSelectedCrypto} />
+            </div>
+          </PullToRefresh>
         ) : null;
 
       case 'news':
@@ -154,7 +160,7 @@ function AppContent() {
               searchQuery={newsSearch}
               onSearchChange={setNewsSearch}
             />
-            <div className="-mx-4 md:mx-0">
+            <div className="-mx-4 md:mx-0 flex-1 overflow-y-auto">
               <PullToRefresh onRefresh={refresh} containerSelector="#app-main-scroll">
                 {filteredNews.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">

@@ -253,7 +253,8 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
 
             {/* Mobile Bottom Navigation */}
             <motion.div
-                className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[var(--md-sys-color-outline-variant)]/20 pb-safe z-50 elevation-3"
+                className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[var(--md-sys-color-outline-variant)]/20 z-50 elevation-3"
+                style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
                 initial={{ y: 100 }}
                 animate={{ y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
