@@ -209,42 +209,6 @@
   box-shadow: var(--elevation-2);
 }
 
-.elevation-3 {
-  box-shadow: var(--elevation-3);
-}
-
-.elevation-4 {
-  box-shadow: var(--elevation-4);
-}
-
-.elevation-5 {
-  box-shadow: var(--elevation-5);
-}
-
-/* Glassmorphism Utilities */
-.glass {
-  @apply backdrop-blur-md bg-[var(--surface-2)]/80 border border-[var(--md-sys-color-outline-variant)]/20;
-}
-
-.glass-card {
-  @apply glass rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
-}
-
-/* Gradient Text */
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-[var(--md-sys-color-primary)] to-[var(--md-sys-color-secondary)];
-}
-
-/* Custom Scrollbar */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
 .scrollbar-thin::-webkit-scrollbar-thumb {
   @apply bg-[var(--md-sys-color-outline-variant)] rounded-full;
 }

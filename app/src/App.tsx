@@ -7,6 +7,7 @@ import { lazy, Suspense } from 'react';
 const StockDetail = lazy(() => import('./components/StockDetail').then(m => ({ default: m.StockDetail })));
 const CryptoDetail = lazy(() => import('./components/CryptoDetail').then(m => ({ default: m.CryptoDetail })));
 import { NewsCard } from './components/NewsCard';
+import { TailwindTest } from './components/TailwindTest';
 import { PullToRefresh } from './components/PullToRefresh';
 import { FloatingActionButton } from './components/FloatingActionButton';
 import { FavoritesTab } from './components/FavoritesTab';
@@ -55,18 +56,20 @@ function AppContent() {
   }, [data, checkAlerts, updatePrices]);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="flex items-center justify-center h-screen bg-md-background">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-        <p className="text-xl font-semibold text-gray-700 dark:text-gray-200">Loading market data...</p>
+        <TailwindTest />
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-md-primary mx-auto mb-4"></div>
+        <p className="text-xl font-semibold text-md-on-background">Loading market data...</p>
       </div>
     </div>
   );
 
+
   if (error) return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-red-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-red-200 dark:border-red-800">
-        <p className="text-red-600 dark:text-red-400 text-lg font-semibold">⚠️ Error: {error}</p>
+    <div className="flex items-center justify-center h-screen bg-md-background">
+      <div className="bg-[var(--surface-1)] p-8 rounded-2xl elevation-3 border border-error">
+        <p className="text-error text-lg font-semibold">⚠️ Error: {error}</p>
       </div>
     </div>
   );

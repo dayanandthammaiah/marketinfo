@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Debug Test</title>
+    <style>
+        :root {
+            --test-color: #006C4C;
+            --bg-app: #F8FAF6;
+            --text-main: #191C1A;
+        }
+
+        body {
+            background: var(--bg-app);
+            color: var(--text-main);
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .test-box {
+            background: var(--test-color);
+            color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>CSS Custom Properties Test</h1>
+
+    <div class="test-box">
+        <p>If you see this box in GREEN, CSS custom properties are working!</p>
+        <p>Background should be #006C4C (forest green)</p>
+    </div>
+
+    <div
+        style="background: var(--bg-app); color: var(--text-main); padding: 20px; border: 2px solid var(--test-color);">
+        <p>Inline style test - this box should have:</p>
+        <ul>
+            <li>Light background from --bg-app</li>
+            <li>Dark text from --text-main</li>
+            <li>Green border from --test-color</li>
+        </ul>
+    </div>
+
+    <script>
+        // Log computed styles
+        const root = document.documentElement;
+        const computed = getComputedStyle(root);
+        console.log('CSS Variables:');
+        console.log('--test-color:', computed.getPropertyValue('--test-color'));
+        console.log('--bg-app:', computed.getPropertyValue('--bg-app'));
+        console.log('--text-main:', computed.getPropertyValue('--text-main'));
+    </script>
+</body>
+
+</html>
