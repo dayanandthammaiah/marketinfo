@@ -58,7 +58,7 @@ jobs:
     name: Build Android APK
     needs: build-web
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     
     steps:
     - name: Checkout
@@ -94,18 +94,65 @@ jobs:
         if [ ! -d "dist" ]; then npm run build; fi
         npx cap sync android
     
-    - name: Build APK (unsigned debug)
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        cache-read-only: false
+        gradle-home-cache-cleanup: true
+    
+    - name: Make gradlew executable
+      working-directory: app/android
+      run: chmod +x gradlew
+    
+    - name: Build Debug APK
       working-directory: app/android
       run: |
-        chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon --build-cache --parallel
+        ./gradlew assembleDebug \
+          --no-daemon \
+          --build-cache \
+          --parallel \
+          --max-workers=2 \
+          -Dorg.gradle.jvmargs="-Xmx2048m" \
+          -Dkotlin.daemon.jvm.options="-Xmx1024m"
     
-    - name: Upload Android APK
+    - name: Build Release APK (unsigned)
+      working-directory: app/android
+      run: |
+        ./gradlew assembleRelease \
+          --no-daemon \
+          --build-cache \
+          --parallel \
+          --max-workers=2 \
+          -Dorg.gradle.jvmargs="-Xmx2048m" \
+          -Dkotlin.daemon.jvm.options="-Xmx1024m"
+    
+    - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
-        name: InvestIQ-Android-${{ github.run_number }}
+        name: InvestIQ-Android-Debug-${{ github.run_number }}
         path: app/android/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 7
+    
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: InvestIQ-Android-Release-${{ github.run_number }}
+        path: app/android/app/build/outputs/apk/release/app-release-unsigned.apk
         retention-days: 30
+    
+    - name: Build Summary
+      if: success()
+      run: |
+        echo "✅ Android APKs built successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 APK Details" >> $GITHUB_STEP_SUMMARY
+        echo "- Debug APK: \`app-debug.apk\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Release APK: \`app-release-unsigned.apk\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        DEBUG_SIZE=$(ls -lh app/android/app/build/outputs/apk/debug/app-debug.apk | awk '{print $5}')
+        RELEASE_SIZE=$(ls -lh app/android/app/build/outputs/apk/release/app-release-unsigned.apk | awk '{print $5}')
+        echo "📦 Debug size: $DEBUG_SIZE" >> $GITHUB_STEP_SUMMARY
+        echo "📦 Release size: $RELEASE_SIZE" >> $GITHUB_STEP_SUMMARY
 
   build-ios:
     name: Build iOS App
