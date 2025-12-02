@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tabTransition } from '../utils/animations';
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -34,22 +35,31 @@ interface MainLayoutProps {
 export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpdated, onRefresh, isRefreshing }: MainLayoutProps) {
     const [hiddenHeader, setHiddenHeader] = useState(false);
     const [lastScrollTop, setLastScrollTop] = useState(0);
+    const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
         const el = document.getElementById('app-main-scroll');
         if (!el) return;
+
         const onScroll = () => {
             const current = el.scrollTop;
+
+            // Hide/show header based on scroll direction
             if (current > lastScrollTop + 5) {
                 setHiddenHeader(true);
             } else if (current < lastScrollTop - 5) {
                 setHiddenHeader(false);
             }
+
+            // Add surface tint when scrolled
+            setIsScrolled(current > 10);
             setLastScrollTop(current);
         };
+
         el.addEventListener('scroll', onScroll, { passive: true });
         return () => el.removeEventListener('scroll', onScroll as any);
     }, [lastScrollTop]);
+
     const mainTabs = [
         { id: 'india', label: 'India', icon: TrendingUp },
         { id: 'us', label: 'US', icon: DollarSign },
@@ -66,19 +76,30 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     return (
         <div className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans">
             {/* Top App Bar */}
-            <header className={cn("sticky top-0 z-50 w-full glass border-b border-white/10 shadow-sm transition-transform duration-300", hiddenHeader ? "-translate-y-full" : "translate-y-0")}>
+            <header
+                className={cn(
+                    "sticky top-0 z-50 w-full transition-all duration-300",
+                    "glass border-b border-white/10",
+                    hiddenHeader ? "-translate-y-full" : "translate-y-0",
+                    isScrolled ? "elevation-2 bg-[var(--surface-1)]/95" : "elevation-0 bg-[var(--surface-0)]/90"
+                )}
+            >
                 <div className="container mx-auto px-4">
                     {/* Top Row: Logo, Search, Actions */}
                     <div className="h-16 flex items-center justify-between gap-4">
                         {/* Logo */}
-                        <div className="flex items-center gap-3 flex-shrink-0 group cursor-pointer">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 flex items-center justify-center shadow-lg group-hover:shadow-primary-500/30 transition-all duration-300 group-hover:scale-105">
+                        <motion.div
+                            className="flex items-center gap-3 flex-shrink-0 group cursor-pointer"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 flex items-center justify-center elevation-1 group-hover:elevation-2 transition-all duration-300">
                                 <span className="text-white font-bold text-xl tracking-tighter">II</span>
                             </div>
                             <span className="m3-title-large bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-500 bg-clip-text text-transparent hidden sm:block tracking-tight">
                                 InvestIQ
                             </span>
-                        </div>
+                        </motion.div>
 
                         {/* Search Bar (Desktop) */}
                         <div className="hidden md:flex flex-1 max-w-md relative group">
@@ -87,106 +108,129 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                                 type="text"
                                 placeholder="Search stocks, crypto, news..."
                                 onChange={(e) => onSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-2 border border-transparent focus:border-primary-500/50 focus:bg-surface focus:ring-4 focus:ring-primary-500/10 focus:outline-none transition-all placeholder:text-muted/70 text-sm"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-2 border border-transparent focus:border-primary-500/50 focus:bg-surface focus:ring-4 focus:ring-primary-500/10 focus:outline-none transition-all placeholder:text-muted/70 text-sm m3-body-medium"
                             />
                         </div>
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                            {/* Mobile Search Icon Toggle (Placeholder for now) */}
-                            <button className="md:hidden p-2 text-muted hover:text-main">
+                            {/* Mobile Search Icon */}
+                            <motion.button
+                                className="md:hidden p-2 rounded-xl text-muted hover:text-main hover:bg-surface-2 transition-all"
+                                whileTap={{ scale: 0.95 }}
+                            >
                                 <Search size={20} />
-                            </button>
+                            </motion.button>
 
-                            {/* Secondary Tabs Icons (Mobile & Desktop) */}
+                            {/* Secondary Tabs Icons */}
                             {secondaryTabs.map(tab => (
-                                <button
+                                <motion.button
                                     key={tab.id}
                                     onClick={() => onTabChange(tab.id)}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                     className={cn(
-                                        "p-2 rounded-xl transition-all relative",
+                                        "p-2.5 rounded-xl transition-all relative",
                                         activeTab === tab.id
-                                            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                                            ? "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 elevation-1"
                                             : "text-muted hover:bg-surface-2 hover:text-main"
                                     )}
                                     title={tab.label}
                                 >
-                                    <tab.icon size={20} />
+                                    <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
                                     {activeTab === tab.id && (
-                                        <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
+                                        <motion.span
+                                            layoutId="secondary-active-indicator"
+                                            className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary-500 rounded-full"
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                        />
                                     )}
-                                </button>
+                                </motion.button>
                             ))}
 
-                            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block" />
+                            <div className="h-6 w-px bg-[var(--md-sys-color-outline-variant)] mx-1 hidden sm:block" />
 
-                            {/* Last Updated (Desktop) */}
+                            {/* Last Updated */}
                             {lastUpdated && (
-                                <span className="hidden lg:flex items-center gap-2 text-xs text-muted font-medium mr-2 bg-surface-2 px-3 py-1.5 rounded-full border border-white/5">
+                                <motion.span
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="hidden lg:flex items-center gap-2 text-xs text-muted font-medium mr-2 bg-surface-2 px-3 py-1.5 rounded-full border border-[var(--md-sys-color-outline-variant)]/20 m3-label-medium"
+                                >
                                     {activeTab === 'crypto' && (
                                         <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-main opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success-main"></span>
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-success)] opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-success)]"></span>
                                         </span>
                                     )}
                                     Updated {formatRelativeTime(lastUpdated)}
-                                </span>
+                                </motion.span>
                             )}
 
-                            {/* Refresh Button (Desktop) */}
-                            <button
+                            {/* Refresh Button */}
+                            <motion.button
                                 onClick={onRefresh}
                                 disabled={isRefreshing}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 className={cn(
-                                    "hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-2 hover:bg-surface border border-transparent hover:border-primary-500/30 text-muted hover:text-primary-600 font-medium transition-all active:scale-95",
+                                    "hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 border border-transparent hover:border-primary-500/30 text-muted hover:text-primary-600 font-medium transition-all elevation-0 hover:elevation-1",
                                     isRefreshing && "opacity-70 cursor-wait"
                                 )}
                                 title="Refresh data now"
                             >
                                 <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-primary-500")} />
-                            </button>
+                            </motion.button>
 
                             {/* Theme Toggle */}
                             <ThemeToggle />
                         </div>
                     </div>
 
-                    {/* Desktop Navigation Tabs - Modern Material 3 Design */}
-                    <nav className="hidden md:flex items-center justify-center gap-2 border-t border-white/10 px-4 bg-gradient-to-b from-surface/50 to-surface/0 backdrop-blur-sm">
-                        {mainTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => onTabChange(tab.id)}
-                                className={cn(
-                                    "group relative flex-1 max-w-[200px] px-8 py-4 font-bold transition-all duration-300 flex items-center justify-center gap-3 text-base whitespace-nowrap rounded-t-2xl",
-                                    activeTab === tab.id
-                                        ? "text-white bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-600 shadow-2xl shadow-primary-500/50 scale-105"
-                                        : "text-muted hover:text-main hover:bg-gradient-to-br hover:from-surface-2/80 hover:to-surface-2/40 hover:shadow-lg backdrop-blur-sm border-2 border-transparent hover:border-white/10"
-                                )}
-                            >
-                                <tab.icon 
-                                    size={22} 
+                    {/* Desktop Navigation Tabs */}
+                    <nav className="hidden md:flex items-center justify-center gap-1 border-t border-[var(--md-sys-color-outline-variant)]/20 px-4 py-1 relative">
+                        {mainTabs.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            return (
+                                <motion.button
+                                    key={tab.id}
+                                    onClick={() => onTabChange(tab.id)}
+                                    whileHover={{ scale: isActive ? 1 : 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     className={cn(
-                                        "transition-all duration-300",
-                                        activeTab === tab.id 
-                                            ? "opacity-100 scale-110 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" 
-                                            : "opacity-70 group-hover:opacity-100 group-hover:scale-105"
-                                    )} 
-                                />
-                                <span className={cn(
-                                    "font-bold tracking-wide",
-                                    activeTab === tab.id && "drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
-                                )}>
-                                    {tab.label}
-                                </span>
-                                {activeTab === tab.id && (
-                                    <>
-                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-white/40 via-white/80 to-white/40 rounded-t-full" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent rounded-t-2xl" />
-                                    </>
-                                )}
-                            </button>
-                        ))}
+                                        "relative flex-1 max-w-[180px] px-6 py-3 m3-title-small font-semibold transition-all duration-300 flex items-center justify-center gap-2 rounded-xl",
+                                        isActive
+                                            ? "text-[var(--md-sys-color-on-primary-container)] bg-[var(--md-sys-color-primary-container)]"
+                                            : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-2)]"
+                                    )}
+                                >
+                                    <tab.icon
+                                        size={18}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                        className={cn(
+                                            "transition-all duration-300",
+                                            isActive && "scale-110"
+                                        )}
+                                    />
+                                    <span>{tab.label}</span>
+
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="tab-indicator"
+                                            className="absolute inset-0 bg-[var(--md-sys-color-primary-container)] rounded-xl -z-10"
+                                            initial={false}
+                                            transition={{
+                                                type: "spring",
+                                                stiffness: 500,
+                                                damping: 30,
+                                            }}
+                                        />
+                                    )}
+                                </motion.button>
+                            );
+                        })}
                     </nav>
                 </div>
             </header>
@@ -196,10 +240,10 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        variants={tabTransition}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
                         className="h-full"
                     >
                         {children}
@@ -208,31 +252,60 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 pb-safe z-50">
+            <motion.div
+                className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[var(--md-sys-color-outline-variant)]/20 pb-safe z-50 elevation-3"
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
                 <div className="flex justify-around items-center px-2 py-2">
                     {mainTabs.map(tab => {
                         const isActive = activeTab === tab.id;
                         return (
-                            <button
+                            <motion.button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
+                                whileTap={{ scale: 0.95 }}
                                 className={cn(
-                                    "flex flex-col items-center justify-center w-full py-1 gap-1 transition-all duration-300",
-                                    isActive ? "text-primary-600 dark:text-primary-400" : "text-muted hover:text-main"
+                                    "relative flex flex-col items-center justify-center w-full py-2 gap-1 transition-all duration-300 rounded-xl",
+                                    isActive ? "text-[var(--md-sys-color-primary)]" : "text-[var(--text-muted)]"
                                 )}
                             >
                                 <div className={cn(
-                                    "p-1.5 rounded-xl transition-all",
-                                    isActive ? "bg-primary-50 dark:bg-primary-900/20" : "bg-transparent"
+                                    "relative p-1.5 rounded-xl transition-all",
+                                    isActive && "bg-[var(--md-sys-color-primary-container)]"
                                 )}>
-                                    <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                                    <tab.icon
+                                        size={22}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                        className="transition-all duration-300"
+                                    />
+
+                                    {/* Active indicator */}
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="mobile-tab-indicator"
+                                            className="absolute inset-0 bg-[var(--md-sys-color-primary-container)] rounded-xl -z-10"
+                                            initial={false}
+                                            transition={{
+                                                type: "spring",
+                                                stiffness: 500,
+                                                damping: 30,
+                                            }}
+                                        />
+                                    )}
                                 </div>
-                                <span className="text-[10px] font-medium">{tab.label}</span>
-                            </button>
+                                <span className={cn(
+                                    "m3-label-small font-medium transition-all",
+                                    isActive && "font-bold"
+                                )}>
+                                    {tab.label}
+                                </span>
+                            </motion.button>
                         );
                     })}
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

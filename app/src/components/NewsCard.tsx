@@ -1,12 +1,15 @@
 import type { NewsItem } from '../types';
 import { Newspaper, ExternalLink } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { motion } from 'framer-motion';
+import { cardHover } from '../utils/animations';
 
 interface NewsCardProps {
     item: NewsItem;
+    index?: number;
 }
 
-export function NewsCard({ item }: NewsCardProps) {
+export function NewsCard({ item, index = 0 }: NewsCardProps) {
     // Format date
     const formattedDate = new Date(item.published).toLocaleDateString('en-US', {
         month: 'short',
@@ -14,23 +17,32 @@ export function NewsCard({ item }: NewsCardProps) {
         year: 'numeric'
     });
 
-    // Get category color
+    // Get category color using Material 3 tokens
     const getCategoryColor = (category?: string) => {
         const cat = category?.toLowerCase() || 'business';
-        if (cat.includes('tech')) return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800';
-        if (cat.includes('market') || cat.includes('stock')) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800';
-        if (cat.includes('crypto')) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800';
-        if (cat.includes('economy')) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300 border-gray-200 dark:border-gray-700';
+        if (cat.includes('tech')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 border-purple-300 dark:border-purple-800';
+        if (cat.includes('market') || cat.includes('stock')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 border-blue-300 dark:border-blue-800';
+        if (cat.includes('crypto')) return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-amber-300 dark:border-amber-800';
+        if (cat.includes('economy')) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800';
+        return 'bg-[var(--surface-3)] text-[var(--text-main)] border-[var(--md-sys-color-outline-variant)]';
     };
 
     return (
-        <a
+        <motion.a
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group md3-card p-0 overflow-hidden flex flex-col h-full active:scale-[0.98] transition-all duration-300 hover:shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
-            style={{ animationDelay: `${Math.random() * 200}ms` }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+                duration: 0.4,
+                delay: index * 0.05,
+                ease: [0.2, 0.0, 0, 1.0],
+            }}
+            variants={cardHover}
+            whileHover="hover"
+            whileTap="tap"
+            className="group overflow-hidden rounded-2xl bg-[var(--surface-1)] elevation-1 hover:elevation-3 flex flex-col h-full transition-all duration-300 border border-[var(--md-sys-color-outline-variant)]/10"
         >
             {/* Image Section */}
             <div className="relative aspect-video w-full overflow-hidden">
@@ -102,11 +114,15 @@ export function NewsCard({ item }: NewsCardProps) {
                     <span className="m3-label-small text-[var(--text-muted)] truncate max-w-[120px] font-medium">
                         {item.source}
                     </span>
-                    <span className="m3-label-small flex items-center gap-1.5 text-[var(--md-sys-color-primary)] font-bold group-hover:translate-x-1 transition-transform">
-                        Read Article <ExternalLink size={12} />
-                    </span>
+                    <motion.span
+                        className="m3-label-small flex items-center gap-1.5 text-[var(--md-sys-color-primary)] font-bold"
+                        whileHover={{ x: 4 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        Read <ExternalLink size={12} />
+                    </motion.span>
                 </div>
             </div>
-        </a>
+        </motion.a>
     );
 }

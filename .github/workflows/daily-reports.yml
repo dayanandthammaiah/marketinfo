@@ -1,0 +1,103 @@
+name: Daily Market Reports (Email)
+
+on:
+  schedule:
+    - cron: '30 0 * * *' # 6:00 AM IST daily
+  workflow_dispatch:
+
+concurrency:
+  group: market-reports
+  cancel-in-progress: true
+
+jobs:
+  fetch-and-send-reports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: 'scripts/requirements.txt'
+    
+    - name: Install dependencies (cached)
+      working-directory: scripts
+      run: pip install -r requirements.txt
+    
+    - name: Fetch India Stocks (Top 50)
+      working-directory: scripts
+      run: |
+        python -c "
+        import sys; sys.path.insert(0, '.')
+        from fetchers.stocks_async import fetch_stock_data, NIFTY_50_TICKERS
+        import json
+        data = fetch_stock_data(NIFTY_50_TICKERS)
+        with open('../data/india_stocks.json', 'w') as f:
+            json.dump(data, f)
+        "
+    
+    - name: Fetch US Stocks (Top 20)
+      working-directory: scripts
+      run: |
+        python -c "
+        import sys; sys.path.insert(0, '.')
+        from fetchers.stocks_async import fetch_stock_data, US_TICKERS
+        import json
+        data = fetch_stock_data(US_TICKERS[:20])
+        with open('../data/us_stocks.json', 'w') as f:
+            json.dump(data, f)
+        "
+    
+    - name: Fetch Crypto (Top 20)
+      working-directory: scripts
+      run: |
+        python -c "
+        import sys; sys.path.insert(0, '.')
+        from fetchers.crypto import fetch_crypto_data
+        import json
+        data = fetch_crypto_data(20)
+        with open('../data/crypto_data.json', 'w') as f:
+            json.dump(data, f)
+        "
+    
+    - name: Generate Institutional Analysis Report
+      working-directory: scripts
+      run: python main_optimized.py
+    
+    - name: Send Email Report
+      env:
+        EMAIL_USER: ${{ secrets.EMAIL_USER }}
+        GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      continue-on-error: true
+      working-directory: scripts
+      run: |
+        python -c "
+        import json, sys, os
+        sys.path.insert(0, '.')
+        try:
+            from analysis.report import generate_html_report
+            from send_email import send_email
+            with open('../app/public/latest_data.json', 'r') as f:
+                data = json.load(f)
+            html = generate_html_report(data)
+            send_email(html)
+            print('✅ Email report sent successfully!')
+        except Exception as e:
+            print(f'❌ Email failed: {e}')
+            sys.exit(1)
+        "
+    
+    - name: Upload Report (Backup)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: market-report-${{ github.run_number }}
+        path: |
+          app/public/latest_data.json
+          scripts/templates/email_report.html
+        retention-days: 7

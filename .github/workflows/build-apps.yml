@@ -1,0 +1,194 @@
+name: Build Apps (Web, Android, iOS)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apps.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: build-apps
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  JAVA_VERSION: '21'
+
+jobs:
+  build-web:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: app
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Build
+      working-directory: app
+      run: npm run build
+    
+    - name: Upload Web Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: InvestIQ-Web-${{ github.run_number }}
+        path: app/dist
+        retention-days: 30
+    
+    - name: Cache build for mobile
+      uses: actions/cache@v4
+      with:
+        path: app/dist
+        key: web-build-${{ github.sha }}
+
+  build-android:
+    name: Build Android APK
+    needs: build-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: ${{ env.JAVA_VERSION }}
+        cache: 'gradle'
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+    
+    - name: Restore web build
+      uses: actions/cache@v4
+      with:
+        path: app/dist
+        key: web-build-${{ github.sha }}
+    
+    - name: Install dependencies
+      working-directory: app
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Sync to Android
+      working-directory: app
+      run: |
+        if [ ! -d "dist" ]; then npm run build; fi
+        npx cap sync android
+    
+    - name: Build APK (unsigned debug)
+      working-directory: app/android
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon --build-cache --parallel
+    
+    - name: Upload Android APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: InvestIQ-Android-${{ github.run_number }}
+        path: app/android/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
+
+  build-ios:
+    name: Build iOS App
+    needs: build-web
+    runs-on: macos-latest
+    timeout-minutes: 20
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: app/package-lock.json
+    
+    - name: Restore web build
+      uses: actions/cache@v4
+      with:
+        path: app/dist
+        key: web-build-${{ github.sha }}
+    
+    - name: Install dependencies
+      working-directory: app
+      run: npm ci --prefer-offline --no-audit
+    
+    - name: Sync to iOS
+      working-directory: app
+      run: |
+        if [ ! -d "dist" ]; then npm run build; fi
+        npx cap sync ios
+    
+    - name: Cache CocoaPods
+      uses: actions/cache@v4
+      with:
+        path: app/ios/App/Pods
+        key: ${{ runner.os }}-pods-${{ hashFiles('app/ios/App/Podfile.lock') }}
+    
+    - name: Build iOS (unsigned simulator)
+      working-directory: app/ios/App
+      run: |
+        xcodebuild clean build \
+          -workspace App.xcworkspace \
+          -scheme App \
+          -configuration Debug \
+          -sdk iphonesimulator \
+          -destination 'platform=iOS Simulator,name=iPhone 15' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          -quiet
+    
+    - name: Archive iOS build
+      run: |
+        cd app/ios/App/build/Debug-iphonesimulator
+        zip -r InvestIQ-iOS-${{ github.run_number }}.zip App.app
+    
+    - name: Upload iOS Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: InvestIQ-iOS-${{ github.run_number }}
+        path: app/ios/App/build/Debug-iphonesimulator/InvestIQ-iOS-${{ github.run_number }}.zip
+        retention-days: 30
+
+  summary:
+    name: Build Summary
+    needs: [build-web, build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Create Summary
+      run: |
+        echo "# 📦 Build Summary - Run #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Build Status" >> $GITHUB_STEP_SUMMARY
+        echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 🌐 Web | ${{ needs.build-web.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🤖 Android | ${{ needs.build-android.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🍎 iOS | ${{ needs.build-ios.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📥 Download Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "Artifacts are available in the Actions tab (30 days retention)" >> $GITHUB_STEP_SUMMARY

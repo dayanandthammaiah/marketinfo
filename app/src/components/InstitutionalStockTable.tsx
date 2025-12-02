@@ -210,7 +210,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
         return (
             <div
                 onClick={() => onRowClick?.(stock)}
-                className="md3-card active:scale-[0.98] transition-transform relative overflow-hidden"
+                className="md3-card active:scale-[0.98] transition-all duration-300 relative overflow-hidden hover:elevation-2 cursor-pointer"
             >
                 {/* Rank Badge */}
                 <div className="absolute top-0 right-0 bg-[var(--surface-5)] px-3 py-1 rounded-bl-xl border-b border-l border-[var(--md-sys-color-outline-variant)]/20 shadow-sm">
@@ -222,7 +222,7 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                 <div className="flex flex-col gap-4">
                     {/* Header */}
                     <div className="flex items-start gap-3 pr-12">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${scoreColors.bg} ${scoreColors.text}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${scoreColors.bg} ${scoreColors.text} elevation-1`}>
                             {stock.score?.toFixed(0)}
                         </div>
                         <div>
@@ -259,6 +259,9 @@ export function InstitutionalStockTable({ data, onRowClick }: InstitutionalStock
                         </div>
                     </div>
                 </div>
+
+                {/* Hover gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--md-sys-color-primary)]/0 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </div>
         );
     };

@@ -3,19 +3,64 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+env/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Environment variables
 .env
+.env.local
+.env.*.local
 
 # Node
 node_modules/
 dist/
 build/
+.npm/
+.eslintcache
+*.tsbuildinfo
 
 # Capacitor
 app/android/app/build/
+app/android/.gradle/
+app/android/build/
+app/ios/App/build/
 app/ios/App/App/public/
 app/ios/App/Podfile.lock
 app/ios/App/Pods/
+app/ios/App/DerivedData/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
 # OS
-.DS_Store
 Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary data (workflows cache)
+data/
+*.json.tmp
+scripts/templates/email_report.html
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Build artifacts
+*.apk
+*.ipa
+*.zip
+*.tar.gz
