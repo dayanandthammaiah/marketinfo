@@ -34,30 +34,42 @@ export function ThemeToggle() {
 
     // Apply theme to document
     useEffect(() => {
-        const root = document.documentElement;
-        const isDark = theme === 'dark';
+        const applyTheme = () => {
+            const root = document.documentElement;
+            const isDark = theme === 'dark';
 
-        // Apply dark class
-        if (isDark) {
-            root.classList.add('dark');
+            // Apply dark class
+            if (isDark) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+
+            // Apply Material You colors
+            applyMaterialYouColors(isDark);
+
+            // Persist theme
+            localStorage.setItem(THEME_KEY, theme);
+            Preferences.set({ key: THEME_KEY, value: theme }).catch(() => { });
+
+            // Apply theme color meta tag for mobile browsers
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute(
+                    'content',
+                    isDark ? '#191C1A' : '#FBFDF9'
+                );
+            }
+        };
+
+        // Use View Transitions API if available for smooth theme switching
+        if ('startViewTransition' in document) {
+            (document as any).startViewTransition(() => {
+                applyTheme();
+            });
         } else {
-            root.classList.remove('dark');
-        }
-
-        // Apply Material You colors
-        applyMaterialYouColors(isDark);
-
-        // Persist theme
-        localStorage.setItem(THEME_KEY, theme);
-        Preferences.set({ key: THEME_KEY, value: theme }).catch(() => { });
-
-        // Apply theme color meta tag for mobile browsers
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            metaThemeColor.setAttribute(
-                'content',
-                isDark ? '#191C1A' : '#FBFDF9'
-            );
+            // Fallback for browsers without View Transitions
+            applyTheme();
         }
     }, [theme]);
 
@@ -85,7 +97,7 @@ export function ThemeToggle() {
                     animate={{ scale: 1, rotate: 0 }}
                     exit={{ scale: 0, rotate: 180 }}
                     transition={{
-                        duration: 0.15,
+                        duration: 0.12,
                         ease: [0.3, 0.0, 0, 1.0],
                     }}
                     className="flex items-center justify-center"

@@ -4,7 +4,6 @@ import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tabTransition } from '../utils/animations';
-import { useSafeArea } from '../hooks/useSafeArea';
 
 // Helper function to format relative time
 function formatRelativeTime(date: Date): string {
@@ -37,7 +36,6 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     const [hiddenHeader, setHiddenHeader] = useState(false);
     const [lastScrollTop, setLastScrollTop] = useState(0);
     const [isScrolled, setIsScrolled] = useState(false);
-    const safeArea = useSafeArea();
 
     useEffect(() => {
         const el = document.getElementById('app-main-scroll');
@@ -76,7 +74,15 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
     ];
 
     return (
-        <div className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans">
+        <div
+            className="h-screen overflow-hidden bg-app text-main flex flex-col transition-colors duration-300 font-sans"
+            style={{
+                paddingTop: 'var(--safe-area-inset-top)',
+                paddingBottom: 'var(--safe-area-inset-bottom)',
+                paddingLeft: 'var(--safe-area-inset-left)',
+                paddingRight: 'var(--safe-area-inset-right)',
+            }}
+        >
             {/* Top App Bar */}
             <header
                 className={cn(
@@ -238,7 +244,7 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
             </header>
 
             {/* Main Content */}
-            <main id="app-main-scroll" className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-24 md:pb-6">
+            <main id="app-main-scroll" className="flex-1 container mx-auto px-4 py-6 overflow-y-auto scrollbar-thin pb-safe">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -253,10 +259,8 @@ export function MainLayout({ children, activeTab, onTabChange, onSearch, lastUpd
                 </AnimatePresence>
             </main>
 
-            {/* Mobile Bottom Navigation */}
             <motion.div
                 className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[var(--md-sys-color-outline-variant)]/20 z-50 elevation-3"
-                style={{ paddingBottom: `${Math.max(safeArea.bottom, 8)}px` }}
                 initial={{ y: 100 }}
                 animate={{ y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}

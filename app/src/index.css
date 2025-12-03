@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 :root {
+  /* Safe Area Insets for Android/iOS */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+
   /* Material 3 Design Tokens - Light Theme */
   --md-sys-color-primary: #006C4C;
   --md-sys-color-on-primary: #FFFFFF;
@@ -238,16 +244,29 @@
   @apply bg-[var(--bg-surface-2)];
 }
 
-/* Smooth theme transitions */
-* {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: var(--duration-medium);
-  transition-timing-function: var(--easing-standard);
+/* Optimized theme transitions - only apply to specific elements */
+/* Universal * transitions removed to eliminate flicker */
+@supports (view-transition-name: none) {
+
+  /* For browsers that support View Transitions API */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.2s;
+  }
 }
 
-/* Disable transitions for transform/opacity (handled separately) */
-*:where(:not(.no-smooth-theme)) {
+/* Fallback: Add transitions only to interactive elements */
+button,
+a,
+input,
+select,
+textarea,
+[class*="bg-"],
+[class*="text-"],
+[class*="border-"] {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: var(--duration-medium);
+  transition-timing-function: var(--easing-standard);
 }
 
 /* Animations */
