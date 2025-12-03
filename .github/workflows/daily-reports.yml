@@ -29,13 +29,17 @@ jobs:
       working-directory: scripts
       run: pip install -r requirements.txt
     
+    - name: Create data directory
+      run: mkdir -p data
+    
     - name: Fetch India Stocks (Top 50)
       working-directory: scripts
       run: |
         python -c "
         import sys; sys.path.insert(0, '.')
         from fetchers.stocks_async import fetch_stock_data, NIFTY_50_TICKERS
-        import json
+        import json, os
+        os.makedirs('../data', exist_ok=True)
         data = fetch_stock_data(NIFTY_50_TICKERS)
         with open('../data/india_stocks.json', 'w') as f:
             json.dump(data, f)
@@ -47,7 +51,8 @@ jobs:
         python -c "
         import sys; sys.path.insert(0, '.')
         from fetchers.stocks_async import fetch_stock_data, US_TICKERS
-        import json
+        import json, os
+        os.makedirs('../data', exist_ok=True)
         data = fetch_stock_data(US_TICKERS[:20])
         with open('../data/us_stocks.json', 'w') as f:
             json.dump(data, f)
@@ -59,7 +64,8 @@ jobs:
         python -c "
         import sys; sys.path.insert(0, '.')
         from fetchers.crypto import fetch_crypto_data
-        import json
+        import json, os
+        os.makedirs('../data', exist_ok=True)
         data = fetch_crypto_data(20)
         with open('../data/crypto_data.json', 'w') as f:
             json.dump(data, f)
