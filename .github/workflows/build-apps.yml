@@ -115,7 +115,7 @@ jobs:
           -Dorg.gradle.jvmargs="-Xmx2048m" \
           -Dkotlin.daemon.jvm.options="-Xmx1024m"
     
-    - name: Build Release APK (unsigned)
+    - name: Build Release APK (debug-signed)
       working-directory: app/android
       run: |
         ./gradlew assembleRelease \
@@ -123,6 +123,10 @@ jobs:
           --build-cache \
           --parallel \
           --max-workers=2 \
+          -Pandroid.injected.signing.store.file=${{ github.workspace }}/app/android/app/debug.keystore \
+          -Pandroid.injected.signing.store.password=android \
+          -Pandroid.injected.signing.key.alias=androiddebugkey \
+          -Pandroid.injected.signing.key.password=android \
           -Dorg.gradle.jvmargs="-Xmx2048m" \
           -Dkotlin.daemon.jvm.options="-Xmx1024m"
     
@@ -137,7 +141,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: InvestIQ-Android-Release-${{ github.run_number }}
-        path: app/android/app/build/outputs/apk/release/app-release-unsigned.apk
+        path: app/android/app/build/outputs/apk/release/app-release.apk
         retention-days: 30
     
     - name: Build Summary
@@ -146,11 +150,11 @@ jobs:
         echo "✅ Android APKs built successfully!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📱 APK Details" >> $GITHUB_STEP_SUMMARY
-        echo "- Debug APK: \`app-debug.apk\`" >> $GITHUB_STEP_SUMMARY
-        echo "- Release APK: \`app-release-unsigned.apk\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Debug APK: \`app-debug.apk\` (debug-signed)" >> $GITHUB_STEP_SUMMARY
+        echo "- Release APK: \`app-release.apk\` (debug-signed for testing)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         DEBUG_SIZE=$(ls -lh app/android/app/build/outputs/apk/debug/app-debug.apk | awk '{print $5}')
-        RELEASE_SIZE=$(ls -lh app/android/app/build/outputs/apk/release/app-release-unsigned.apk | awk '{print $5}')
+        RELEASE_SIZE=$(ls -lh app/android/app/build/outputs/apk/release/app-release.apk | awk '{print $5}')
         echo "📦 Debug size: $DEBUG_SIZE" >> $GITHUB_STEP_SUMMARY
         echo "📦 Release size: $RELEASE_SIZE" >> $GITHUB_STEP_SUMMARY
 
